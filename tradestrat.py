@@ -22,8 +22,11 @@ class Strategy(abc.ABC):
             None
         """
 
-        # TODO
-        ...
+        self.weights: pd.DataFrame | None = None
+
+        if type(data) == list:
+            # TODO: CURRENTLY USING DUMMY DATA
+            self.data: pd.DataFrame = data
 
     @abc.abstractmethod
     def get_weights(self) -> pd.DataFrame:

@@ -67,8 +67,20 @@ class Backtest:
             None
         """
 
-        # TODO
-        ...
+        self.rebal_period: int = rebal_period
+        self.transaction_cost: float = transaction_cost
+        self.start_date: datetime = start_date
+        self.end_date: datetime = end_date
+
+        # Set start and end date dataframes
+        if start_date == None:
+            start_date = strategy.data.index[0]
+
+        if end_date == None:
+            end_date = strategy.data.index[-1]
+
+        self.price_data: pd.DataFrame = strategy.data.loc[start_date:end_date]
+        self.strat_weights: pd.DataFrame = strategy.weights.loc[start_date:end_date]
 
     def get_return(self, cumulative: bool = False) -> NDArray[float]:
         """

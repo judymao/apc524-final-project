@@ -93,5 +93,44 @@ class Backtest:
             Array of returns over the backtest period
 
         """
-        # TODO
-        ...
+
+        # Initialize returns
+        r: list[float] = []
+
+        # Initialize variables
+        prev_portfolio_val: float = 1
+        tcost_loss: float = 0
+
+        # Initialize portfolio weights for asset i (x_i), using strategy weights (w_i) and prices (p_i)
+        # x_i = w_i / p_i
+        p: pd.Series = self.price_data.iloc[0]
+        w: pd.Series = self.strat_weights.iloc[0]
+        x: pd.Series = w / p
+
+        for t in range(len(self.price_data)):
+
+            # Get portfolio value and corresponding return for current period
+            p = self.price_data.iloc[t]
+            portfolio_val = (x * p).sum() - tcost_loss
+            r.append(portfolio_val / prev_portfolio_val - 1)
+
+            # Update previous portfolio value
+            prev_portfolio_val = portfolio_val
+
+            # Check if current period is a rebalancing period
+            if self.rebal_period and t % self.rebal_period == 0:
+                # Save previous portfolio weights
+                x_prev: pd.Series = x
+
+                # Get updated portfolio weights
+                w = self.strat_weights.iloc[t]
+                x = w / p
+
+                # Compute amount lost to transaction costs
+                tcost_loss += self.transaction_cost * abs(x - x_prev).sum()
+
+        if cumulative:
+            return np.cumprod(1 + np.array(r)) - 1
+
+        else:
+            return np.array(r)

@@ -134,3 +134,20 @@ class Backtest:
 
         else:
             return np.array(r)
+
+    def get_sharpe(self, rf_rate: float = 0.01) -> float:
+        """
+        Get Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+
+        Return:
+            float of the Sharpe ratio over the backtest period
+
+        """
+
+        excess_return: float = self.get_return(cumulative=True)[-1] - rf_rate
+        std_return: float = np.std(self.get_return())
+
+        return excess_return / std_return

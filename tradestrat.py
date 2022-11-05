@@ -135,6 +135,27 @@ class Backtest:
         else:
             return np.array(r)
 
+    def plot(self) -> None:
+        """
+        Plot the cumulative returns of the backtest returns
+
+        Args:
+            None
+
+        Return:
+            None
+        """
+
+        # Get cumulative returns
+        cum_ret: NDArray[float] = self.get_return(cumulative=True)
+
+        # Create the plot
+        plt.plot(self.price_data.index, cum_ret)
+        plt.xticks(rotation=45)
+        plt.title("Cumulative Returns over Backtest Period")
+        plt.xlabel("Date")
+        plt.ylabel("Cumulative Return")
+
     def get_sharpe(self, rf_rate: float = 0.01) -> float:
         """
         Get Sharpe ratio

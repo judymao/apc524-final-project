@@ -1,4 +1,5 @@
 # Imports
+from __future__ import annotations
 
 import abc
 from collections.abc import Callable
@@ -16,7 +17,7 @@ class Strategy(abc.ABC):
         Args:
             data: list of tickers to be considered in universe OR
                   dictionary of DataFrames, each containing dates along rows and tickers along columns,
-                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+                  with one DataFrame per value (e.g. data = {'returns': ..., 'PE': ...})
 
         Return:
             None

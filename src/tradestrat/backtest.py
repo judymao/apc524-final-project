@@ -137,7 +137,7 @@ class Backtest:
 
         temp = np.minimum(0, self.get_return() - rf_rate) ** 2
         temp_expectation = np.mean(temp)
-        downside_vol: float = np.sqrt(temp_expectation)
+        downside_vol: float = np.sqrt(252) * np.sqrt(temp_expectation)
 
         return downside_vol
 
@@ -153,7 +153,7 @@ class Backtest:
 
         """
 
-        excess_return: float = self.get_return(cumulative=True)[-1] - rf_rate
+        excess_return: float = self.get_annualized_return() - rf_rate
         std_return: float = self.get_annualized_vol()
 
         return excess_return / std_return
@@ -173,15 +173,18 @@ class Backtest:
         if lookback < 5:
             raise ValueError("lookback is too short, must be >= 5")
 
-        excess_returns = self.get_return(cumulative=True) - rf_rate
+        
 
         if lookback > len(excess_returns):
             raise ValueError("lookback is longer than backtest period")
 
         std_returns = []
+        returns = self.get_returns()
+
         for i in range(len(excess_returns) - lookback):
+            excess_returns = self.get_annualized_return(returns[i : i + lookback]) - rf_rate
             std_returns.append(
-                self.get_annualized_vol(excess_returns[i : i + lookback])
+                self.get_annualized_vol(excess_returns)
             )
 
         return np.array(excess_returns[lookback:] / std_returns)
@@ -197,12 +200,11 @@ class Backtest:
             float of the Sortino ratio over the backtest period
 
         """
+        
+        excess_return: float = self.get_annualized_return() - rf_rate
+        downside_vol: float = self.get_downside_vol()
 
-        downside_vol = self.get_downside_vol()
-
-        sortino_ratio: float = np.mean(self.get_return() - rf_rate) / downside_vol
-
-        return sortino_ratio
+        return excess_return / downside_vol
 
     def get_max_drawdown(self) -> float:
         """

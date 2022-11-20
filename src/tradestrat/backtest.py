@@ -11,6 +11,7 @@ from numpy.typing import NDArray
 
 from .strategies import Strategy
 
+
 class Backtest:
     def __init__(
         self,
@@ -115,10 +116,17 @@ class Backtest:
             None
         """
 
+        n_days = len(self.strat_weights)
+        n_ticks = 10
+        date_labels = [
+            self.strat_weights.index[i * (n_days // n_ticks)] for i in range(n_ticks)
+        ]
+
         if cumulative not in [0, 1, 2]:
             raise ValueError("cumulative must be 0, 1 or 2")
 
         if cumulative < 2:
+            # Plot either the cumulative or daily returns
             ret = self.get_return(cumulative=bool(cumulative))
             if cumulative:
                 return_type = "Cumulative"
@@ -128,13 +136,42 @@ class Backtest:
 
             # Create the plot
             plt.plot(self.price_data.index, ret)
-            plt.xticks(rotation=45)
+            plt.xticks(date_labels, rotation=45)
             plt.title(f"{return_type} Returns over Backtest Period")
             plt.xlabel("Date")
             plt.ylabel(f"{return_type} Return")
+            plt.show()
 
         else:
-            s
+            # Plot both the cumulative and daily returns
+            cum_ret = self.get_return(cumulative=True)
+            day_ret = self.get_return(cumulative=False)
+
+            # Create the plot
+            fig, ax = plt.subplots()
+
+            ax2 = ax.twinx()
+            ax.plot(
+                self.price_data.index,
+                day_ret,
+                label="Daily Return",
+                color="orange",
+            )
+            ax2.plot(
+                self.price_data.index, cum_ret, label="Cumulative Return", color="blue"
+            )
+
+            ax.set_xticks(date_labels)
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(45)
+            ax.set_xlabel("Date")
+            ax.set_ylabel(f"Daily Return")
+            ax2.set_ylabel(f"Cumulative Return")
+
+            plt.title(f"Returns over Backtest Period")
+            ax.legend()
+            ax2.legend()
+            plt.show()
 
     def get_sharpe(self, rf_rate: float = 0.01) -> float:
         """

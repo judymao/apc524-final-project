@@ -31,7 +31,7 @@ class Strategy(abc.ABC):
             # TODO: CURRENTLY USING DUMMY DATA
             self.data = data
         else:
-            self.data = pd.DataFrame({})
+            self.data = list()
 
     @abc.abstractmethod
     def get_weights(self) -> pd.DataFrame:

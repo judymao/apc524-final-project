@@ -361,31 +361,3 @@ class Backtest:
             ax2.legend()
             plt.show()
 
-    def plot_sharpe(self, rf_rate: float = 0.01, lookback: int = 20):
-        """
-        Plot the rolling Sharpe ratio
-
-        Args:
-            rf_rate: risk free rate [default 0.01]
-            rolling_window: lookback period to calculate sharpe ratio [default 10]
-
-        Return:
-            None
-        """
-
-        sharpes = self.get_rolling_sharpe(rf_rate, lookback)
-        dates = self.strat_weights.index[lookback:]
-
-        n_days = len(self.strat_weights)
-        n_ticks = 10
-        date_labels = [
-            dates[i * (n_days // n_ticks)] for i in range(n_ticks)
-        ]
-
-        # Create the plot
-        plt.plot(dates, sharpes)
-        plt.xticks(date_labels, rotation=90)
-        plt.title(f"{lookback}-Day Rolling Sharpe Ratio over Backtest Period")
-        plt.xlabel("Date")
-        plt.ylabel(f"Sharpe Ratio")
-        plt.show()

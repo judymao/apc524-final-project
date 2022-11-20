@@ -173,23 +173,6 @@ class Backtest:
             ax2.legend()
             plt.show()
 
-    def get_sharpe(self, rf_rate: float = 0.01) -> float:
-        """
-        Get Sharpe ratio
-
-        Args:
-            rf_rate: risk free rate [default 0.01]
-
-        Return:
-            Sharpe ratio over the entire backtest period
-
-        """
-
-        excess_return = self.get_return(cumulative=True)[-1] - rf_rate
-        std_return = np.std(self.get_return())
-
-        return excess_return / std_return
-
     def get_annualized_vol(self) -> float:
         """
         Get annualized volatility
@@ -206,12 +189,12 @@ class Backtest:
 
         return annualized_vol
 
-    def get_downside_vol(self) -> float:
+    def get_downside_vol(self, rf_rate: float = 0.01) -> float:
         """
         Get downside volatility
 
         Args:
-            None
+            rf_rate: risk free rate [default 0.01]
 
         Return:
             float of the downside volatility over the backtest period
@@ -336,16 +319,72 @@ class Backtest:
 
         return max_count
 
-    def get_max_underwater_time(self) -> int:
+    def get_underwater_time(self, threshold_days: int = 10) -> tuple[int, int]:
+        """
+        Get maximum and average underwater times.
+        Underwater time is defined as the number of days it takes an investor to recover its money at the start of the maximum drawdown period.
+        
+        Args:
+            threshold_days: number of subsequent days the return must beat in order to be considered a maximum
+            
+        Return: 
+            tuple containing maximum underwater time and mean underwater time, respectively
+            
+        """
+        returns = self.get_return(cumulative=True)
+        
+        curr_max = returns[0]
+        curr_count = 0
+        max_drawdown_i = None
+        underwater_times = []
+        
+        for i in range(1, len(returns)):
+            if returns[i] > curr_max:
+                curr_max = returns[i]
+                curr_count = 0
+            else:
+                curr_count += 1
+            
+            if curr_count >= threshold_days:
+                max_drawdown_i = i
+                curr_count = 0
+                continue
+                
+            if max_drawdown_i:
+                if returns[i] >= returns[max_drawdown_i]:
+                    underwater_time = i - max_drawdown_i
+                    underwater_times.append(underwater_time)
+                    max_drawdown_i = None
+         
+        return (max(underwater_times), np.mean(underwater_times))
+                    
+    def get_max_underwater_time(self, threshold_days: int = 10) -> tuple[int, int]:
         """
         Get maximum underwater time.
-        This is defined as the maximum number of days it takes an investor to recover its money at the start of the maximum drawdown period
 
         Args:
-            None
-
-        Return:
-            integer of maximum underwater time
-
+            threshold_days: number of subsequent days the return must beat in order to be considered a maximum
+            
+        Return: 
+            maximum underwater time
+            
+        """  
+        
+        max_underwater_time = self.get_underwater_time(threshold_days)[0]
+        return max_underwater_time
+    
+    def get_avg_underwater_time(self, threshold_days: int = 10) -> tuple[int, int]:
         """
-        pass
+        Get mean underwater time.
+
+        Args:
+            threshold_days: number of subsequent days the return must beat in order to be considered a maximum
+            
+        Return: 
+            mean underwater time
+            
+        """  
+        
+        mean_underwater_time = self.get_underwater_time(threshold_days)[1]
+        return mean_underwater_time
+        

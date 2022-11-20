@@ -31,7 +31,7 @@ class Strategy(abc.ABC):
             # TODO: CURRENTLY USING DUMMY DATA
             self.data = data
         else:
-            self.data = data
+            self.data = pd.DataFrame({})
 
     @abc.abstractmethod
     def get_weights(self) -> pd.DataFrame:
@@ -84,8 +84,8 @@ class Backtest:
         if end_date == None:
             end_date = strategy.data.index[-1]
 
-        self.price_data: pd.DataFrame = strategy.data.loc[start_date:end_date]  # type: ignore[misc]
-        self.strat_weights: pd.DataFrame = strategy.weights.loc[start_date:end_date]  # type: ignore[misc]
+        self.price_data = strategy.data.loc[start_date:end_date]  # type: ignore[misc]
+        self.strat_weights = strategy.weights.loc[start_date:end_date]  # type: ignore[misc]
 
     def get_return(self, cumulative: bool = False) -> NDArray[float]:
         """

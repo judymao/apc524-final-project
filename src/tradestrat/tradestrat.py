@@ -5,13 +5,13 @@ import abc
 from collections.abc import Callable
 from datetime import datetime
 
-import numpy as np
-import pandas as pd
-from matplotlib import pyplot as plt
+import numpy as np  # type: ignore[import]
+import pandas as pd  # type: ignore[import]
+from matplotlib import pyplot as plt  # type: ignore[import]
 from numpy.typing import NDArray
 
+DATA = pd.read_csv("../../data/sp500_prices.csv")
 
-DATA = pd.read_csv('../../data/sp500_prices.csv')
 
 class Strategy(abc.ABC):
     def __init__(self, data: list[str] | dict[str, pd.DataFrame]) -> None:
@@ -21,7 +21,7 @@ class Strategy(abc.ABC):
         Args:
             data: list of tickers to be considered in universe OR
                   dictionary of DataFrames, each containing dates along rows and tickers along columns,
-                  with one DataFrame per value (e.g. data = {'returns': ..., 'PE': ...})
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
 
         Return:
             None
@@ -32,9 +32,11 @@ class Strategy(abc.ABC):
         if type(data) == list:
             # TODO: CURRENTLY USING DUMMY DATA
             self.data = DATA[data]
-        else:
+            # TODO: raise errors
+        elif type(data) == dict:
             self.data = data["price"]
-
+        else:
+            raise TypeError("data must either be a list of tickers or a dictionary of dataframes")
     @abc.abstractmethod
     def get_weights(self) -> pd.DataFrame:
         """

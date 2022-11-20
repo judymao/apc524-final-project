@@ -147,31 +147,39 @@ class Backtest:
         else:
             return np.array(r)
 
-    def plot_returns(self, cumulative: bool = True) -> None:
+    def plot_returns(self, cumulative: int = 1) -> None:
         """
         Plot the cumulative returns of the backtest returns
 
         Args:
-            cumulative: if True, plot cumulative return, otherwise plot daily return [default True]
+            cumulative: if 0, plot daily return
+                        if 1, plot cumulative return [default 1]
+                        if 2, plot both daily and cumulative return
 
         Return:
             None
         """
 
-        if cumulative:
-            # Get cumulative returns
-            ret = self.get_return(cumulative=True)
-            return_type = "Cumulative"
-        else:
-            ret = self.get_return()
-            return_type = "Daily"
+        if cumulative not in [0, 1, 2]:
+            raise ValueError("cumulative must be 0, 1 or 2")
 
-        # Create the plot
-        plt.plot(self.price_data.index, ret)
-        plt.xticks(rotation=45)
-        plt.title(f"{return_type} Returns over Backtest Period")
-        plt.xlabel("Date")
-        plt.ylabel(f"{return_type} Return")
+        if cumulative < 2:
+            ret = self.get_return(cumulative=bool(cumulative))
+            if cumulative:
+                return_type = "Cumulative"
+
+            else:
+                return_type = "Daily"
+
+            # Create the plot
+            plt.plot(self.price_data.index, ret)
+            plt.xticks(rotation=45)
+            plt.title(f"{return_type} Returns over Backtest Period")
+            plt.xlabel("Date")
+            plt.ylabel(f"{return_type} Return")
+
+        else:
+            s
 
     def get_sharpe(self, rf_rate: float = 0.01) -> float:
         """

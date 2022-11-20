@@ -25,11 +25,12 @@ class Strategy(abc.ABC):
             None
         """
 
-        self.weights: pd.DataFrame | None = None
-        self.data: pd.DataFrame
+        self.weights = None
 
         if type(data) == list:
             # TODO: CURRENTLY USING DUMMY DATA
+            self.data = data
+        else:
             self.data = data
 
     @abc.abstractmethod

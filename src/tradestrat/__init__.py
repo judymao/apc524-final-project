@@ -1,3 +1,3 @@
 # __init__.py
-from .momentum import Momentum
-from .tradestrat import Backtest, Strategy
+from .backtest import Backtest
+from .strategies import Momentum, Strategy, Value

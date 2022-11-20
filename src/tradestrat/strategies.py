@@ -1,9 +1,54 @@
 from __future__ import annotations
 
+import abc
+
 import numpy as np
 import pandas as pd
 
-from tradestrat import Strategy
+DATA = pd.read_csv(__file__.rsplit("/", 1)[0] + "/data/sp500_prices.csv")
+
+
+class Strategy(abc.ABC):
+    def __init__(self, data: list[str] | dict[str, pd.DataFrame]) -> None:
+        """
+        Initialize Strategy class
+
+        Args:
+            data: list of tickers to be considered in universe OR
+                  dictionary of DataFrames, each containing dates along rows and tickers along columns,
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+
+        Return:
+            None
+        """
+
+        self.weights = pd.DataFrame()
+
+        if type(data) == list:
+            # TODO: CURRENTLY USING DUMMY DATA
+            self.data = DATA[data]
+            # TODO: raise errors
+        elif type(data) == dict:
+            self.data = data["price"]
+        else:
+            raise TypeError(
+                "data must either be a list of tickers or a dictionary of dataframes"
+            )
+
+    @abc.abstractmethod
+    def get_weights(self) -> pd.DataFrame:
+        """
+        Get strategy weights over time
+
+        Args:
+            ...
+
+        Return:
+            DataFrame containing dates along rows and tickers along columns, with values being the strategy weights
+
+        """
+
+        ...
 
 
 class Momentum(Strategy):
@@ -78,6 +123,7 @@ class Momentum(Strategy):
         final_weights = self.equal_weights_ls(final_ret)
 
         return final_weights
+
 
 class Value(Strategy):
     def __init__(

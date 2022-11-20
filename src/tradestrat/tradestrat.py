@@ -5,7 +5,7 @@ import abc
 from collections.abc import Callable
 from datetime import datetime
 
-import numpy as np  # type: ignore[import]
+import numpy as np
 import pandas as pd  # type: ignore[import]
 from matplotlib import pyplot as plt  # type: ignore[import]
 from numpy.typing import NDArray
@@ -27,7 +27,7 @@ class Strategy(abc.ABC):
             None
         """
 
-        self.weights = None
+        self.weights = pd.DataFrame()
 
         if type(data) == list:
             # TODO: CURRENTLY USING DUMMY DATA
@@ -36,7 +36,10 @@ class Strategy(abc.ABC):
         elif type(data) == dict:
             self.data = data["price"]
         else:
-            raise TypeError("data must either be a list of tickers or a dictionary of dataframes")
+            raise TypeError(
+                "data must either be a list of tickers or a dictionary of dataframes"
+            )
+
     @abc.abstractmethod
     def get_weights(self) -> pd.DataFrame:
         """

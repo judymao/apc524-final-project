@@ -185,7 +185,7 @@ class Backtest:
 
         """
 
-        excess_return: float = self.get_return(cumulative=True)[-1] - rf_rate
-        std_return: float = np.std(self.get_return())
+        excess_return = self.get_return(cumulative=True)[-1] - rf_rate
+        std_return = np.std(self.get_return())
 
         return excess_return / std_return

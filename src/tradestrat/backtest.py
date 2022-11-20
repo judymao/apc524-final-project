@@ -14,12 +14,12 @@ from .strategies import Strategy
 
 class Backtest:
     def __init__(
-        self,
-        strategy: Strategy,
-        rebal_period: int | None = None,
-        transaction_cost: float = 0,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+            self,
+            strategy: Strategy,
+            rebal_period: int | None = None,
+            transaction_cost: float = 0,
+            start_date: datetime | None = None,
+            end_date: datetime | None = None,
     ) -> None:
         """
         Initialize Backtest class
@@ -103,9 +103,197 @@ class Backtest:
         else:
             return np.array(r)
 
+    def get_annualized_vol(self, returns: NDArray | None = None) -> float:
+        """
+        Get annualized volatility
+
+        Args:
+            returns: if given, returns to calculate volatility over [default None]
+
+        Return:
+            annualized volatility over the backtest period or over returns passed in
+
+        """
+        if returns is not None:
+            annualized_vol = np.sqrt(252) * np.std(returns)
+        else:
+            annualized_vol = np.sqrt(252) * np.std(self.get_return())
+
+        return annualized_vol
+
+    def get_downside_vol(self, rf_rate: float = 0.01) -> float:
+        """
+        Get downside volatility
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+
+        Return:
+            downside volatility over the backtest period
+
+        """
+
+        temp = np.minimum(0, self.get_return() - rf_rate) ** 2
+        temp_expectation = np.mean(temp)
+        downside_vol = np.sqrt(temp_expectation)
+
+        return downside_vol
+
+    def get_sharpe(self, rf_rate: float = 0.01) -> float:
+        """
+        Get Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+
+        Return:
+            Sharpe ratio over the backtest period
+
+        """
+
+        excess_return = self.get_return(cumulative=True)[-1] - rf_rate
+        std_return = self.get_annualized_vol()
+
+        return excess_return / std_return
+
+    def get_rolling_sharpe(self, rf_rate: float = 0.01, lookback: int = 20) -> float:
+        """
+        Get rolling Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+            rolling_window: lookback period to calculate sharpe ratio [default 10]
+
+        Return:
+            Sharpe ratio over the backtest period
+        """
+
+        if lookback < 5:
+            raise ValueError("lookback is too short, must be >= 5")
+
+        excess_returns = self.get_return(cumulative=True) - rf_rate
+
+        if lookback > len(excess_returns):
+            raise ValueError("lookback is longer than backtest period")
+
+        std_returns = []
+        for i in range(len(excess_returns) - lookback):
+            std_returns.append(self.get_annualized_vol(excess_returns[i:i + lookback]))
+
+        return excess_returns[lookback:] / std_returns
+
+    def get_sortino(self, rf_rate: float = 0.01) -> float:
+        """
+        Get Sortino ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+
+        Return:
+            float of the Sortino ratio over the backtest period
+
+        """
+
+        downside_vol = self.get_downside_vol()
+
+        sortino_ratio = np.mean(self.get_return() - rf_rate) / downside_vol
+
+        return sortino_ratio
+
+    def get_max_drawdown(self) -> float:
+        """
+        Get maximum drawdown
+
+        Args:
+            None
+
+        Return:
+            max drawdown over the backtest period
+
+        """
+
+        returns = self.get_return()
+
+        numerator = max(returns) - min(returns)
+        denominator = max(returns)
+
+        max_dd = numerator / denominator
+
+        return max_dd
+
+    def get_max_consecutive_positive(self) -> int:
+        """
+        Get maximum number of consecutive days of positive returns
+
+        Args:
+            None
+
+        Return:
+            maximum number of consecutive days of positive returns
+
+        """
+
+        returns = self.get_return()
+
+        count = 0
+        max_count = 0
+
+        for i in range(len(returns)):
+            if returns[i] > 0:
+                count += 1
+            else:
+                max_count = max(max_count, count)
+                count = 0
+
+        max_count = max(max_count, count)
+
+        return max_count
+
+    def get_max_consecutive_negative(self) -> int:
+        """
+        Get maximum number of consecutive days of negative returns
+
+        Args:
+            None
+
+        Return:
+            maximum number of consecutive days of negative returns
+
+        """
+
+        returns = self.get_return()
+
+        count = 0
+        max_count = 0
+
+        for i in range(len(returns)):
+            if returns[i] < 0:
+                count += 1
+            else:
+                max_count = max(max_count, count)
+                count = 0
+
+        max_count = max(max_count, count)
+
+        return max_count
+
+    def get_max_underwater_time(self) -> int:
+        """
+        Get maximum underwater time.
+        This is defined as the maximum number of days it takes an investor to recover its money at the start of the maximum drawdown period
+
+        Args:
+            None
+
+        Return:
+            maximum underwater time
+
+        """
+        pass
+
     def plot_returns(self, cumulative: int = 1) -> None:
         """
-        Plot the cumulative returns of the backtest returns
+        Plot the backtest returns
 
         Args:
             cumulative: if 0, plot daily return
@@ -136,7 +324,7 @@ class Backtest:
 
             # Create the plot
             plt.plot(self.price_data.index, ret)
-            plt.xticks(date_labels, rotation=45)
+            plt.xticks(date_labels, rotation=90)
             plt.title(f"{return_type} Returns over Backtest Period")
             plt.xlabel("Date")
             plt.ylabel(f"{return_type} Return")
@@ -163,7 +351,7 @@ class Backtest:
 
             ax.set_xticks(date_labels)
             for tick in ax.get_xticklabels():
-                tick.set_rotation(45)
+                tick.set_rotation(90)
             ax.set_xlabel("Date")
             ax.set_ylabel(f"Daily Return")
             ax2.set_ylabel(f"Cumulative Return")
@@ -173,179 +361,31 @@ class Backtest:
             ax2.legend()
             plt.show()
 
-    def get_sharpe(self, rf_rate: float = 0.01) -> float:
+    def plot_sharpe(self, rf_rate: float = 0.01, lookback: int = 20):
         """
-        Get Sharpe ratio
+        Plot the rolling Sharpe ratio
 
         Args:
             rf_rate: risk free rate [default 0.01]
+            rolling_window: lookback period to calculate sharpe ratio [default 10]
 
         Return:
-            Sharpe ratio over the entire backtest period
-
-        """
-
-        excess_return = self.get_return(cumulative=True)[-1] - rf_rate
-        std_return = np.std(self.get_return())
-
-        return excess_return / std_return
-
-    def get_annualized_vol(self) -> float:
-        """
-        Get annualized volatility
-
-        Args:
             None
-
-        Return:
-            float of the annualized volatility over the backtest period
-
         """
 
-        annualized_vol = np.sqrt(252) * np.std(self.get_return())
+        sharpes = self.get_rolling_sharpe(rf_rate, lookback)
+        dates = self.strat_weights.index[lookback:]
 
-        return annualized_vol
+        n_days = len(self.strat_weights)
+        n_ticks = 10
+        date_labels = [
+            dates[i * (n_days // n_ticks)] for i in range(n_ticks)
+        ]
 
-    def get_downside_vol(self) -> float:
-        """
-        Get downside volatility
-
-        Args:
-            None
-
-        Return:
-            float of the downside volatility over the backtest period
-
-        """
-
-        temp = np.minimum(0, self.get_return() - rf_rate) ** 2
-        temp_expectation = np.mean(temp)
-        downside_vol = np.sqrt(temp_expectation)
-
-        return downside_vol
-
-    def get_sharpe(self, rf_rate: float = 0.01) -> float:
-        """
-        Get Sharpe ratio
-
-        Args:
-            rf_rate: risk free rate [default 0.01]
-
-        Return:
-            float of the Sharpe ratio over the backtest period
-
-        """
-
-        excess_return = self.get_return(cumulative=True)[-1] - rf_rate
-        std_return = self.get_annualized_vol()
-
-        return excess_return / std_return
-
-    def get_sortino(self, rf_rate: float = 0.01) -> float:
-        """
-        Get Sortino ratio
-
-        Args:
-            rf_rate: risk free rate [default 0.01]
-
-        Return:
-            float of the Sortino ratio over the backtest period
-
-        """
-
-        downside_vol = self.get_downside_vol()
-
-        sortino_ratio = np.mean(self.get_return() - rf_rate) / downside_vol
-
-        return sortino_ratio
-
-    def get_max_drawdown(self) -> float:
-        """
-        Get maximum drawdown
-
-        Args:
-            None
-
-        Return:
-            float of max drawdown over the backtest period
-
-        """
-
-        returns = self.get_return()
-
-        numerator = max(returns) - min(returns)
-        denominator = max(returns)
-
-        max_dd = numerator / denominator
-
-        return max_dd
-
-    def get_max_consecutive_positive(self) -> int:
-        """
-        Get maximum number of consecutive days of positive returns
-
-        Args:
-            None
-
-        Return:
-            integer of maximum number of consecutive days of positive returns
-
-        """
-
-        returns = self.get_return()
-
-        count = 0
-        max_count = 0
-
-        for i in range(len(returns)):
-            if returns[i] > 0:
-                count += 1
-            else:
-                max_count = max(max_count, count)
-                count = 0
-
-        max_count = max(max_count, count)
-
-        return max_count
-
-    def get_max_consecutive_negative(self) -> int:
-        """
-        Get maximum number of consecutive days of negative returns
-
-        Args:
-            None
-
-        Return:
-            integer of maximum number of consecutive days of negative returns
-
-        """
-
-        returns = self.get_return()
-
-        count = 0
-        max_count = 0
-
-        for i in range(len(returns)):
-            if returns[i] < 0:
-                count += 1
-            else:
-                max_count = max(max_count, count)
-                count = 0
-
-        max_count = max(max_count, count)
-
-        return max_count
-
-    def get_max_underwater_time(self) -> int:
-        """
-        Get maximum underwater time.
-        This is defined as the maximum number of days it takes an investor to recover its money at the start of the maximum drawdown period
-
-        Args:
-            None
-
-        Return:
-            integer of maximum underwater time
-
-        """
-        pass
+        # Create the plot
+        plt.plot(dates, sharpes)
+        plt.xticks(date_labels, rotation=90)
+        plt.title(f"{lookback}-Day Rolling Sharpe Ratio over Backtest Period")
+        plt.xlabel("Date")
+        plt.ylabel(f"Sharpe Ratio")
+        plt.show()

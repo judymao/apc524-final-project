@@ -76,8 +76,8 @@ class Backtest:
         self.end_date = end_date
 
         # Set start and end date dataframes
-        if start_date == None:
-            start_date = strategy.data.index[0]
+        # if start_date == None:
+        start_date = strategy.data.index[0]
 
         if end_date == None:
             end_date = strategy.data.index[-1]

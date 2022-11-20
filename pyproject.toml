@@ -4,7 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "apc524-final-project"
-requires-python = "3.10"
+version = "1.0"
+requires-python = ">=3.10"
 
 [project.optional-dependencies]
 test = [

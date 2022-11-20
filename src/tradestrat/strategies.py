@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore[import]
 
 DATA = pd.read_csv(__file__.rsplit("/", 1)[0] + "/data/sp500_prices.csv")
 

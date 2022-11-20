@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import abc
 from collections.abc import Callable
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
 
@@ -68,10 +70,10 @@ class Backtest:
             None
         """
 
-        self.rebal_period: int = rebal_period
-        self.transaction_cost: float = transaction_cost
-        self.start_date: datetime = start_date
-        self.end_date: datetime = end_date
+        self.rebal_period = rebal_period
+        self.transaction_cost = transaction_cost
+        self.start_date = start_date
+        self.end_date = end_date
 
         # Set start and end date dataframes
         if start_date == None:
@@ -96,17 +98,17 @@ class Backtest:
         """
 
         # Initialize returns
-        r: list[float] = []
+        r = []
 
         # Initialize variables
-        prev_portfolio_val: float = 1
-        tcost_loss: float = 0
+        prev_portfolio_val = 1
+        tcost_loss = 0
 
         # Initialize portfolio weights for asset i (x_i), using strategy weights (w_i) and prices (p_i)
         # x_i = w_i / p_i
-        p: pd.Series = self.price_data.iloc[0]
-        w: pd.Series = self.strat_weights.iloc[0]
-        x: pd.Series = w / p
+        p = self.price_data.iloc[0]
+        w = self.strat_weights.iloc[0]
+        x = w / p
 
         for t in range(len(self.price_data)):
 
@@ -136,26 +138,31 @@ class Backtest:
         else:
             return np.array(r)
 
-    def plot(self) -> None:
+    def plot_returns(self, cumulative=True) -> None:
         """
         Plot the cumulative returns of the backtest returns
 
         Args:
-            None
+            cumulative: if True, plot cumulative return, otherwise plot daily return [default True]
 
         Return:
             None
         """
 
-        # Get cumulative returns
-        cum_ret: NDArray[float] = self.get_return(cumulative=True)
+        if cumulative:
+            # Get cumulative returns
+            ret = self.get_return(cumulative=True)
+            return_type = "Cumulative"
+        else:
+            ret = self.get_return()
+            return_type = "Daily"
 
         # Create the plot
-        plt.plot(self.price_data.index, cum_ret)
+        plt.plot(self.price_data.index, ret)
         plt.xticks(rotation=45)
-        plt.title("Cumulative Returns over Backtest Period")
+        plt.title(f"{return_type} Returns over Backtest Period")
         plt.xlabel("Date")
-        plt.ylabel("Cumulative Return")
+        plt.ylabel(f"{return_type} Return")
 
     def get_sharpe(self, rf_rate: float = 0.01) -> float:
         """

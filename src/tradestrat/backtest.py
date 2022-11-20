@@ -320,105 +320,6 @@ class Backtest:
         """
         pass
 
-    def plot_returns(self, cumulative: int = 1) -> None:
-        """
-        Plot the backtest returns
-
-        Args:
-            cumulative: if 0, plot daily return
-                        if 1, plot cumulative return [default 1]
-                        if 2, plot both daily and cumulative return
-
-        Return:
-            None
-        """
-
-        n_days = len(self.strat_weights)
-        n_ticks = 10
-        date_labels = [
-            self.strat_weights.index[i * (n_days // n_ticks)] for i in range(n_ticks)
-        ]
-
-        if cumulative not in [0, 1, 2]:
-            raise ValueError("cumulative must be 0, 1 or 2")
-
-        if cumulative < 2:
-            # Plot either the cumulative or daily returns
-            ret = self.get_return(cumulative=bool(cumulative))
-            if cumulative:
-                return_type = "Cumulative"
-
-            else:
-                return_type = "Daily"
-
-            # Create the plot
-            plt.plot(self.price_data.index, ret)
-            plt.xticks(date_labels, rotation=90)
-            plt.title(f"{return_type} Returns over Backtest Period")
-            plt.xlabel("Date")
-            plt.ylabel(f"{return_type} Return")
-            plt.show()
-
-        else:
-            # Plot both the cumulative and daily returns
-            cum_ret = self.get_return(cumulative=True)
-            day_ret = self.get_return(cumulative=False)
-
-            # Create the plot
-            fig, ax = plt.subplots()
-
-            ax2 = ax.twinx()
-            ax.plot(
-                self.price_data.index,
-                day_ret,
-                label="Daily Return",
-                color="orange",
-            )
-            ax2.plot(
-                self.price_data.index, cum_ret, label="Cumulative Return", color="blue"
-            )
-
-            ax.set_xticks(date_labels)
-            for tick in ax.get_xticklabels():
-                tick.set_rotation(90)
-            ax.set_xlabel("Date")
-            ax.set_ylabel(f"Daily Return")
-            ax2.set_ylabel(f"Cumulative Return")
-
-            plt.title(f"Returns over Backtest Period")
-            ax.legend()
-            ax2.legend()
-            plt.show()
-
-    def plot_sharpe(self, rf_rate: float = 0.01, lookback: int = 20):
-        """
-        Plot the rolling Sharpe ratio
-
-        Args:
-            rf_rate: risk free rate [default 0.01]
-            rolling_window: lookback period to calculate sharpe ratio [default 10]
-
-        Return:
-            None
-        """
-
-        sharpes = self.get_rolling_sharpe(rf_rate, lookback)
-        dates = self.strat_weights.index[lookback:]
-
-        n_days = len(self.strat_weights)
-        n_ticks = 10
-        date_labels = [
-            dates[i * (n_days // n_ticks)] for i in range(n_ticks)
-        ]
-
-        # Create the plot
-        plt.plot(dates, sharpes)
-        plt.xticks(date_labels, rotation=90)
-        plt.title(f"{lookback}-Day Rolling Sharpe Ratio over Backtest Period")
-        plt.xlabel("Date")
-        plt.ylabel(f"Sharpe Ratio")
-        plt.show()
-
     def get_downside_vol(self, rf_rate: float = 0.01) -> float:
         """
         Get downside volatility
@@ -618,3 +519,102 @@ class Backtest:
         mean_underwater_time = self.get_underwater_time(threshold_days)[1]
         return mean_underwater_time
         
+
+    def plot_returns(self, cumulative: int = 1) -> None:
+        """
+        Plot the backtest returns
+
+        Args:
+            cumulative: if 0, plot daily return
+                        if 1, plot cumulative return [default 1]
+                        if 2, plot both daily and cumulative return
+
+        Return:
+            None
+        """
+
+        n_days = len(self.strat_weights)
+        n_ticks = 10
+        date_labels = [
+            self.strat_weights.index[i * (n_days // n_ticks)] for i in range(n_ticks)
+        ]
+
+        if cumulative not in [0, 1, 2]:
+            raise ValueError("cumulative must be 0, 1 or 2")
+
+        if cumulative < 2:
+            # Plot either the cumulative or daily returns
+            ret = self.get_return(cumulative=bool(cumulative))
+            if cumulative:
+                return_type = "Cumulative"
+
+            else:
+                return_type = "Daily"
+
+            # Create the plot
+            plt.plot(self.price_data.index, ret)
+            plt.xticks(date_labels, rotation=90)
+            plt.title(f"{return_type} Returns over Backtest Period")
+            plt.xlabel("Date")
+            plt.ylabel(f"{return_type} Return")
+            plt.show()
+
+        else:
+            # Plot both the cumulative and daily returns
+            cum_ret = self.get_return(cumulative=True)
+            day_ret = self.get_return(cumulative=False)
+
+            # Create the plot
+            fig, ax = plt.subplots()
+
+            ax2 = ax.twinx()
+            ax.plot(
+                self.price_data.index,
+                day_ret,
+                label="Daily Return",
+                color="orange",
+            )
+            ax2.plot(
+                self.price_data.index, cum_ret, label="Cumulative Return", color="blue"
+            )
+
+            ax.set_xticks(date_labels)
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(90)
+            ax.set_xlabel("Date")
+            ax.set_ylabel(f"Daily Return")
+            ax2.set_ylabel(f"Cumulative Return")
+
+            plt.title(f"Returns over Backtest Period")
+            ax.legend()
+            ax2.legend()
+            plt.show()
+
+    def plot_sharpe(self, rf_rate: float = 0.01, lookback: int = 20):
+        """
+        Plot the rolling Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+            rolling_window: lookback period to calculate sharpe ratio [default 10]
+
+        Return:
+            None
+        """
+
+        sharpes = self.get_rolling_sharpe(rf_rate, lookback)
+        dates = self.strat_weights.index[lookback:]
+
+        n_days = len(self.strat_weights)
+        n_ticks = 10
+        date_labels = [
+            dates[i * (n_days // n_ticks)] for i in range(n_ticks)
+        ]
+
+        # Create the plot
+        plt.plot(dates, sharpes)
+        plt.xticks(date_labels, rotation=90)
+        plt.title(f"{lookback}-Day Rolling Sharpe Ratio over Backtest Period")
+        plt.xlabel("Date")
+        plt.ylabel(f"Sharpe Ratio")
+        plt.show()

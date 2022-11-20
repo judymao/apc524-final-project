@@ -14,12 +14,12 @@ from .strategies import Strategy
 
 class Backtest:
     def __init__(
-            self,
-            strategy: Strategy,
-            rebal_period: int | None = None,
-            transaction_cost: float = 0,
-            start_date: datetime | None = None,
-            end_date: datetime | None = None,
+        self,
+        strategy: Strategy,
+        rebal_period: int | None = None,
+        transaction_cost: float = 0,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> None:
         """
         Initialize Backtest class
@@ -103,6 +103,33 @@ class Backtest:
         else:
             return np.array(r)
 
+    def plot_sharpe(self, rf_rate: float = 0.01, lookback: int = 20):
+        """
+        Plot the rolling Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+            lookback: lookback period to calculate sharpe ratio [default 10]
+
+        Return:
+            None
+        """
+
+        sharpes = self.get_rolling_sharpe(rf_rate, lookback)
+        dates = self.strat_weights.index[lookback:]
+
+        n_days = len(self.strat_weights)
+        n_ticks = 10
+        date_labels = [dates[i * (n_days // n_ticks)] for i in range(n_ticks)]
+
+        # Create the plot
+        plt.plot(dates, sharpes)
+        plt.xticks(date_labels, rotation=90)
+        plt.title(f"{lookback}-Day Rolling Sharpe Ratio over Backtest Period")
+        plt.xlabel("Date")
+        plt.ylabel(f"Sharpe Ratio")
+        plt.show()
+
     def get_annualized_vol(self, returns: NDArray | None = None) -> float:
         """
         Get annualized volatility
@@ -178,7 +205,9 @@ class Backtest:
 
         std_returns = []
         for i in range(len(excess_returns) - lookback):
-            std_returns.append(self.get_annualized_vol(excess_returns[i:i + lookback]))
+            std_returns.append(
+                self.get_annualized_vol(excess_returns[i : i + lookback])
+            )
 
         return excess_returns[lookback:] / std_returns
 
@@ -411,40 +440,40 @@ class Backtest:
         """
         Get maximum and average underwater times.
         Underwater time is defined as the number of days it takes an investor to recover its money at the start of the maximum drawdown period.
-        
+
         Args:
             threshold_days: number of subsequent days the return must beat in order to be considered a maximum
-            
-        Return: 
+
+        Return:
             tuple containing maximum underwater time and mean underwater time, respectively
-            
+
         """
         returns = self.get_return(cumulative=True)
-        
+
         curr_max = returns[0]
         curr_count = 0
         max_drawdown_i = None
         underwater_times = []
-        
+
         for i in range(1, len(returns)):
             if returns[i] > curr_max:
                 curr_max = returns[i]
                 curr_count = 0
             else:
                 curr_count += 1
-            
+
             if curr_count >= threshold_days:
                 max_drawdown_i = i
                 curr_count = 0
                 continue
-                
+
             if max_drawdown_i:
                 if returns[i] >= returns[max_drawdown_i]:
                     underwater_time = i - max_drawdown_i
                     underwater_times.append(underwater_time)
                     max_drawdown_i = None
          
-        return (max(underwater_times), np.mean(underwater_times))
+        return max(underwater_times), np.mean(underwater_times) # type: ignore[return-value]
                     
     def get_max_underwater_time(self, threshold_days: int = 10) -> int:
         """
@@ -452,12 +481,12 @@ class Backtest:
 
         Args:
             threshold_days: number of subsequent days the return must beat in order to be considered a maximum
-            
-        Return: 
+
+        Return:
             maximum underwater time
-            
-        """  
-        
+
+        """
+
         max_underwater_time = self.get_underwater_time(threshold_days)[0]
         return max_underwater_time
     
@@ -467,15 +496,14 @@ class Backtest:
 
         Args:
             threshold_days: number of subsequent days the return must beat in order to be considered a maximum
-            
-        Return: 
+
+        Return:
             mean underwater time
-            
-        """  
-        
+
+        """
+
         mean_underwater_time = self.get_underwater_time(threshold_days)[1]
         return mean_underwater_time
-        
 
     def plot_returns(self, cumulative: int = 1) -> None:
         """
@@ -553,7 +581,7 @@ class Backtest:
 
         Args:
             rf_rate: risk free rate [default 0.01]
-            rolling_window: lookback period to calculate sharpe ratio [default 10]
+            lookback: lookback period to calculate sharpe ratio [default 10]
 
         Return:
             None
@@ -564,9 +592,7 @@ class Backtest:
 
         n_days = len(self.strat_weights)
         n_ticks = 10
-        date_labels = [
-            dates[i * (n_days // n_ticks)] for i in range(n_ticks)
-        ]
+        date_labels = [dates[i * (n_days // n_ticks)] for i in range(n_ticks)]
 
         # Create the plot
         plt.plot(dates, sharpes)

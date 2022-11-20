@@ -103,6 +103,35 @@ class Backtest:
         else:
             return np.array(r)
 
+    def plot_sharpe(self, rf_rate: float = 0.01, lookback: int = 20):
+        """
+        Plot the rolling Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+            rolling_window: lookback period to calculate sharpe ratio [default 10]
+
+        Return:
+            None
+        """
+
+        sharpes = self.get_rolling_sharpe(rf_rate, lookback)
+        dates = self.strat_weights.index[lookback:]
+
+        n_days = len(self.strat_weights)
+        n_ticks = 10
+        date_labels = [
+            dates[i * (n_days // n_ticks)] for i in range(n_ticks)
+        ]
+
+        # Create the plot
+        plt.plot(dates, sharpes)
+        plt.xticks(date_labels, rotation=90)
+        plt.title(f"{lookback}-Day Rolling Sharpe Ratio over Backtest Period")
+        plt.xlabel("Date")
+        plt.ylabel(f"Sharpe Ratio")
+        plt.show()
+
     def get_annualized_vol(self, returns: NDArray | None = None) -> float:
         """
         Get annualized volatility
@@ -361,3 +390,231 @@ class Backtest:
             ax2.legend()
             plt.show()
 
+    def plot_sharpe(self, rf_rate: float = 0.01, lookback: int = 20):
+        """
+        Plot the rolling Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+            rolling_window: lookback period to calculate sharpe ratio [default 10]
+
+        Return:
+            None
+        """
+
+        sharpes = self.get_rolling_sharpe(rf_rate, lookback)
+        dates = self.strat_weights.index[lookback:]
+
+        n_days = len(self.strat_weights)
+        n_ticks = 10
+        date_labels = [
+            dates[i * (n_days // n_ticks)] for i in range(n_ticks)
+        ]
+
+        # Create the plot
+        plt.plot(dates, sharpes)
+        plt.xticks(date_labels, rotation=90)
+        plt.title(f"{lookback}-Day Rolling Sharpe Ratio over Backtest Period")
+        plt.xlabel("Date")
+        plt.ylabel(f"Sharpe Ratio")
+        plt.show()
+
+    def get_downside_vol(self, rf_rate: float = 0.01) -> float:
+        """
+        Get downside volatility
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+
+        Return:
+            float of the downside volatility over the backtest period
+
+        """
+
+        temp = np.minimum(0, self.get_return() - rf_rate) ** 2
+        temp_expectation = np.mean(temp)
+        downside_vol = np.sqrt(temp_expectation)
+
+        return downside_vol
+
+    def get_sharpe(self, rf_rate: float = 0.01) -> float:
+        """
+        Get Sharpe ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+
+        Return:
+            float of the Sharpe ratio over the backtest period
+
+        """
+
+        excess_return = self.get_return(cumulative=True)[-1] - rf_rate
+        std_return = self.get_annualized_vol()
+
+        return excess_return / std_return
+
+    def get_sortino(self, rf_rate: float = 0.01) -> float:
+        """
+        Get Sortino ratio
+
+        Args:
+            rf_rate: risk free rate [default 0.01]
+
+        Return:
+            float of the Sortino ratio over the backtest period
+
+        """
+
+        downside_vol = self.get_downside_vol()
+
+        sortino_ratio = np.mean(self.get_return() - rf_rate) / downside_vol
+
+        return sortino_ratio
+
+    def get_max_drawdown(self) -> float:
+        """
+        Get maximum drawdown
+
+        Args:
+            None
+
+        Return:
+            float of max drawdown over the backtest period
+
+        """
+
+        returns = self.get_return()
+
+        numerator = max(returns) - min(returns)
+        denominator = max(returns)
+
+        max_dd = numerator / denominator
+
+        return max_dd
+
+    def get_max_consecutive_positive(self) -> int:
+        """
+        Get maximum number of consecutive days of positive returns
+
+        Args:
+            None
+
+        Return:
+            integer of maximum number of consecutive days of positive returns
+
+        """
+
+        returns = self.get_return()
+
+        count = 0
+        max_count = 0
+
+        for i in range(len(returns)):
+            if returns[i] > 0:
+                count += 1
+            else:
+                max_count = max(max_count, count)
+                count = 0
+
+        max_count = max(max_count, count)
+
+        return max_count
+
+    def get_max_consecutive_negative(self) -> int:
+        """
+        Get maximum number of consecutive days of negative returns
+
+        Args:
+            None
+
+        Return:
+            integer of maximum number of consecutive days of negative returns
+
+        """
+
+        returns = self.get_return()
+
+        count = 0
+        max_count = 0
+
+        for i in range(len(returns)):
+            if returns[i] < 0:
+                count += 1
+            else:
+                max_count = max(max_count, count)
+                count = 0
+
+        max_count = max(max_count, count)
+
+        return max_count
+
+    def get_underwater_time(self, threshold_days: int = 10) -> tuple[int, int]:
+        """
+        Get maximum and average underwater times.
+        Underwater time is defined as the number of days it takes an investor to recover its money at the start of the maximum drawdown period.
+        
+        Args:
+            threshold_days: number of subsequent days the return must beat in order to be considered a maximum
+            
+        Return: 
+            tuple containing maximum underwater time and mean underwater time, respectively
+            
+        """
+        returns = self.get_return(cumulative=True)
+        
+        curr_max = returns[0]
+        curr_count = 0
+        max_drawdown_i = None
+        underwater_times = []
+        
+        for i in range(1, len(returns)):
+            if returns[i] > curr_max:
+                curr_max = returns[i]
+                curr_count = 0
+            else:
+                curr_count += 1
+            
+            if curr_count >= threshold_days:
+                max_drawdown_i = i
+                curr_count = 0
+                continue
+                
+            if max_drawdown_i:
+                if returns[i] >= returns[max_drawdown_i]:
+                    underwater_time = i - max_drawdown_i
+                    underwater_times.append(underwater_time)
+                    max_drawdown_i = None
+         
+        return (max(underwater_times), np.mean(underwater_times))
+                    
+    def get_max_underwater_time(self, threshold_days: int = 10) -> tuple[int, int]:
+        """
+        Get maximum underwater time.
+
+        Args:
+            threshold_days: number of subsequent days the return must beat in order to be considered a maximum
+            
+        Return: 
+            maximum underwater time
+            
+        """  
+        
+        max_underwater_time = self.get_underwater_time(threshold_days)[0]
+        return max_underwater_time
+    
+    def get_avg_underwater_time(self, threshold_days: int = 10) -> tuple[int, int]:
+        """
+        Get mean underwater time.
+
+        Args:
+            threshold_days: number of subsequent days the return must beat in order to be considered a maximum
+            
+        Return: 
+            mean underwater time
+            
+        """  
+        
+        mean_underwater_time = self.get_underwater_time(threshold_days)[1]
+        return mean_underwater_time
+        

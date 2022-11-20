@@ -103,6 +103,23 @@ class Backtest:
         else:
             return np.array(r)
 
+    def get_annualized_return(self, daily_returns: NDArray | None = None) -> float:
+        """
+        Get annualized return
+
+        Args:
+            daily_returns: if given, returns to calculate annualized return over [default None]
+
+        Return:
+            annualized return over the backtest period or over returns passed in
+        """
+        if daily_returns is None:
+            daily_returns = self.get_return(cumulative=False)
+
+        annualized_return: float = (np.mean(daily_returns) + 1) ** 252
+
+        return annualized_return
+
     def get_annualized_vol(self, returns: NDArray | None = None) -> float:
         """
         Get annualized volatility
@@ -114,12 +131,11 @@ class Backtest:
             annualized volatility over the backtest period or over returns passed in
 
         """
-        annualized_vol: float
 
-        if returns is not None:
-            annualized_vol = np.sqrt(252) * np.std(returns)
-        else:
-            annualized_vol = np.sqrt(252) * np.std(self.get_return())
+        if returns is None:
+            returns = self.get_return()
+
+        annualized_vol: float = np.sqrt(252) * np.std(returns)
 
         return annualized_vol
 
@@ -173,21 +189,21 @@ class Backtest:
         if lookback < 5:
             raise ValueError("lookback is too short, must be >= 5")
 
-        
-
-        if lookback > len(excess_returns):
+        if lookback > len(self.strat_weights) - lookback:
             raise ValueError("lookback is longer than backtest period")
 
-        std_returns = []
-        returns = self.get_returns()
+        stds = []
+        rets = []
+        returns = self.get_return()
 
-        for i in range(len(excess_returns) - lookback):
-            excess_returns = self.get_annualized_return(returns[i : i + lookback]) - rf_rate
-            std_returns.append(
-                self.get_annualized_vol(excess_returns)
+        for i in range(len(self.strat_weights) - lookback):
+            excess_returns = (
+                self.get_annualized_return(returns[i : i + lookback]) - rf_rate
             )
+            rets.append(excess_returns)
+            stds.append(self.get_annualized_vol(excess_returns))
 
-        return np.array(excess_returns[lookback:] / std_returns)
+        return np.array(rets) / np.array(stds)
 
     def get_sortino(self, rf_rate: float = 0.01) -> float:
         """
@@ -200,7 +216,7 @@ class Backtest:
             float of the Sortino ratio over the backtest period
 
         """
-        
+
         excess_return: float = self.get_annualized_return() - rf_rate
         downside_vol: float = self.get_downside_vol()
 

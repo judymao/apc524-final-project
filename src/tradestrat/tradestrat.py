@@ -82,8 +82,8 @@ class Backtest:
         if end_date == None:
             end_date = strategy.data.index[-1]
 
-        self.price_data: pd.DataFrame = strategy.data.loc[start_date:end_date]
-        self.strat_weights: pd.DataFrame = strategy.weights.loc[start_date:end_date]
+        self.price_data: pd.DataFrame = strategy.data.loc[start_date:end_date] # type: ignore
+        self.strat_weights: pd.DataFrame = strategy.weights.loc[start_date:end_date] # type: ignore
 
     def get_return(self, cumulative: bool = False) -> NDArray[float]:
         """

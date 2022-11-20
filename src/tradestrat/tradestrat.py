@@ -138,7 +138,7 @@ class Backtest:
         else:
             return np.array(r)
 
-    def plot_returns(self, cumulative=True) -> None:
+    def plot_returns(self, cumulative: bool = True) -> None:
         """
         Plot the cumulative returns of the backtest returns
 

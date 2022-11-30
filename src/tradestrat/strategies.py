@@ -37,6 +37,7 @@ class Strategy(abc.ABC):
             raise TypeError(
                 "data must either be a list of tickers or a dictionary of dataframes"
             )
+
         self.weights = self.get_weights()
 
     @abc.abstractmethod
@@ -56,17 +57,21 @@ class Strategy(abc.ABC):
 
 
 class Momentum(Strategy):
-    def __init__(
-        self,
-        data: list[str] | dict[str, pd.DataFrame],
-        lookback_period: int,
-        min_periods: int | None,
-        skip_period: int,
-        perc: float,
-    ) -> None:
+    """
+    An asset's recent relative performance tends to continue in the near future.
 
+    See Jegadeesh and Titman (1991) and Carhart (1997) for academic references.
+    """
+
+    def __init__(
+            self,
+            data: list[str] | dict[str, pd.DataFrame],
+            lookback_period: int,
+            min_periods: int | None,
+            skip_period: int,
+            perc: float,
+    ) -> None:
         super().__init__(data)
-        self.data = data
         self.lookback_period = lookback_period
         self.min_periods = min_periods
         self.skip_period = skip_period
@@ -78,13 +83,19 @@ class Momentum(Strategy):
         self.weights = self.get_weights()
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
-
         """
         Equally Weighted long and short Porfolios
 
-        :param portfolio: pd.DataFrame; dataframe with 1 in assets you want to buy and -1 in stocks you want to sell.
-        :return: pd.DataFrame
+        Args:
+            portfolio: dataframe with equal positive values in assets you want to buy and equal negative
+             in stocks you want to sell.
+
+        Return:
+            Dataframe of equally weighted long and short portfolios. Long positions sums to 100%, short positions
+            sum to -100%
+
         """
+
         port_long = portfolio.where(portfolio > 0, 0)
         port_short = portfolio.where(portfolio < 0, 0)
         n_long = (port_long.fillna(0) != 0).astype(int).sum(axis=1)
@@ -98,27 +109,32 @@ class Momentum(Strategy):
         return final_df
 
     def get_weights(self) -> pd.DataFrame:
-
         """
-        Calculates the desired weights of this strategy per day per asset.
-        :return:
-            pd.DataFrame
+        Calculate desired weights of strategy
+
+        Args:
+            None
+
+        Return:
+            Calculate the desired weights of this strategy per day per asset. Each day is a row and each asset is a
+            column
+
         """
         # Signal
         ret_data = self.data["returns"]
-        self.lookback = (
-            np.exp(
-                ret_data.shift(self.skip_period)
-                .rolling(21 * self.lookback_period)
-                .sum()
-            )
-            - 1
+        lookback = (
+                np.exp(
+                    ret_data.shift(self.skip_period)
+                        .rolling(21 * self.lookback_period)
+                        .sum()
+                )
+                - 1
         )
-        self.rsd = np.exp(ret_data).rolling(21 * self.lookback_period).std()
-        self._signal = self.lookback / self.rsd
+        rsd = np.exp(ret_data).rolling(21 * lookback_period).std()
+        _signal = lookback / rsd
 
         # Weights
-        final_ret = self._signal.copy()
+        final_ret = _signal.copy()
         rank = final_ret.rank(axis=1, pct=True)
         final_ret[:] = np.where(
             rank > (1 - self.perc / 100), 1, np.where(rank < self.perc / 100, -1, 0)
@@ -130,28 +146,36 @@ class Momentum(Strategy):
 
 
 class Value(Strategy):
-    def __init__(
-        self,
-        data: list[str] | dict[str, pd.DataFrame],
-        signal_name: str,
-        perc: float,
-    ) -> None:
+    """Stocks with cheap fundamentals tend to outperform stocks with expensive fundamentals
 
+    See Fama,French (1992,2012) and Asness,Moskowitz,Pedersen(2013) for academic references.
+    """
+
+    def __init__(
+            self,
+            data: list[str] | dict[str, pd.DataFrame],
+            signal_name: str,
+            perc: float,
+    ) -> None:
         super().__init__(data)
-        self.data = data
         self.perc = perc
         self.signal_name = signal_name
 
         self.weights = self.get_weights()
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
-
         """
         Equally Weighted long and short Porfolios
 
-        :param portfolio: pd.DataFrame; dataframe with 1 in assets you want to buy and -1 in stocks you want to sell.
-        :return: pd.DataFrame
+        Args:
+            portfolio: dataframe with equal positive values in assets you want to buy and equal negative
+             in stocks you want to sell.
+
+        Return:
+            Dataframe of equally weighted long and short portfolios. Long positions sums to 100%, short positions
+            sum to -100%
         """
+
         port_long = portfolio.where(portfolio > 0, 0)
         port_short = portfolio.where(portfolio < 0, 0)
         n_long = (port_long.fillna(0) != 0).astype(int).sum(axis=1)
@@ -165,17 +189,23 @@ class Value(Strategy):
         return final_df
 
     def get_weights(self) -> pd.DataFrame:
+        """
+                Calculate desired weights of strategy
 
-        """
-        Calculates the desired weights of this strategy per day per asset.
-        :return:
-            pd.DataFrame
-        """
+                Args:
+                    None
+
+                Return:
+                    Calculate the desired weights of this strategy per day per asset. Each day is a row and each asset is a
+                    column
+
+                """
+
         # Signal
-        self._signal = self.data[self.signal_name]
+        _signal = self.data[self.signal_name]
 
         # Weights
-        final_ret = self._signal.copy()
+        final_ret = _signal.copy()
         rank = final_ret.rank(axis=1, pct=True)
         final_ret[:] = np.where(
             rank > (1 - self.perc / 100), -1, np.where(rank < self.perc / 100, 1, 0)

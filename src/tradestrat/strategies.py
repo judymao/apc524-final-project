@@ -5,9 +5,7 @@ import abc
 import numpy as np
 import pandas as pd  # type: ignore[import]
 
-DATA = pd.read_csv(
-    __file__.rsplit("/", 1)[0].rsplit("\\", 1)[0] + "/data/sp500_prices.csv"
-)
+DATA = pd.read_csv("data/sp500_prices.csv")
 
 
 class Strategy(abc.ABC):

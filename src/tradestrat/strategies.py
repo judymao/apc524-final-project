@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import abc
-import os
-import sys
 
 import numpy as np
 import pandas as pd  # type: ignore[import]
 
-DATA_PATH = "tradestrat/data/sp500_prices.csv"
-DATA = pd.read_csv(DATA_PATH)
+DATA = pd.read_csv("tradestrat/data/sp500_prices.csv")
 
 
 class Strategy(abc.ABC):
@@ -212,5 +209,80 @@ class Value(Strategy):
         )
 
         final_weights = self.equal_weights_ls(final_ret)
+
+        return final_weights
+
+
+class trend_following(Strategy):
+    """
+    Stocks that performed poorly in the past tend to continue performing poorly and viceversa.
+
+    See Moskowitz,Ooi,Pedersen (2012) for academic reference.
+    """
+
+    def __init__(
+            self,
+            data: list[str] | dict[str, pd.DataFrame],
+            lookback_period: int,
+            min_periods: int | None,
+            skip_period: int,
+            wind: int,
+            max_weight: float,
+            risk_free: bool = False,
+
+    ) -> None:
+        super().__init__(data)
+        self.lookback_period = lookback_period
+        self.min_periods = min_periods
+        self.skip_period = skip_period
+        self.wind = wind
+        self.max_weight = max_weight
+        self.risk_free = risk_free
+
+        if self.min_periods == None:
+            self.min_periods = self.wind - 20
+
+        self.weights = self.get_weights()
+
+    def get_weights(self) -> pd.DataFrame:
+        """
+        Calculate desired weights of strategy
+
+        Args:
+            None
+
+        Return:
+            Calculate the desired weights of this strategy per day per asset. Each day is a row and each asset is a
+            column
+
+        """
+        ret_data = self.data["returns"]
+
+        aux = self.skip_period
+        lookback = ((ret_data + 1).shift(aux).rolling(self.wind, min_periods=self.min_periods).prod()) - 1
+
+        vol = ret_data.rolling(self.wind, min_periods=self.min_periods).std()
+
+        if self.risk_free == False:
+
+            signal = lookback / vol
+
+        else:
+            rf = self.data["risk_free"]
+            rf_lookback = ((risk_free + 1).shift(aux).rolling(self.wind, min_periods=self.min_periods).prod()) - 1
+            lookback_adj = lookback.sub(rf_lookback, axis=0)
+            signal = lookback / vol
+
+        neg = signal[signal < 0].div(signal[signal < 0].abs().sum(axis=1), axis=0)
+        neg = neg.fillna(0)
+        pos = signal[signal > 0].div(signal[signal > 0].abs().sum(axis=1), axis=0)
+        pos = pos.fillna(0)
+
+        weights = neg + pos
+        final_weights = weights.dropna(axis=0, how="all")
+
+        if self.max_weight != None:
+            final_weights[final_weights < -1 * self.max_weight] = -1 * self.max_weight
+            final_weights[final_weights > self.max_weight] = self.max_weight
 
         return final_weights

@@ -5,7 +5,9 @@ import abc
 import numpy as np
 import pandas as pd  # type: ignore[import]
 
-DATA = pd.read_csv(__file__.rsplit("/", 1)[0] + "/data/sp500_prices.csv")
+DATA = pd.read_csv(
+    __file__.rsplit("/", 1)[0].rsplit("\\", 1)[0] + "/data/sp500_prices.csv"
+)
 
 
 class Strategy(abc.ABC):
@@ -22,11 +24,11 @@ class Strategy(abc.ABC):
             None
         """
 
-        self.weights = pd.DataFrame()
-
         if type(data) == list:
             # TODO: CURRENTLY USING DUMMY DATA
-            self.data = DATA[data]
+            self.data = DATA[data].copy()
+            self.data["Date"] = pd.to_datetime(DATA["Date"])
+            self.data.set_index("Date", inplace=True)
             # TODO: raise errors
         elif type(data) == dict:
             self.data = data["price"]
@@ -34,6 +36,7 @@ class Strategy(abc.ABC):
             raise TypeError(
                 "data must either be a list of tickers or a dictionary of dataframes"
             )
+        self.weights = self.get_weights()
 
     @abc.abstractmethod
     def get_weights(self) -> pd.DataFrame:

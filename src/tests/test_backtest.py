@@ -1,14 +1,13 @@
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join("..")))
-
+os.chdir(os.path.abspath(os.path.join("src")))
 from datetime import date
 
 import numpy as np
 import pytest
 
-from tradestrat import Backtest, Strategy
+from src.tradestrat import Backtest, Strategy
 
 
 class StrategyTest(Strategy):

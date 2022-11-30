@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import abc
+import os
+import sys
 
 import numpy as np
 import pandas as pd  # type: ignore[import]
 
-DATA = pd.read_csv("data/sp500_prices.csv")
+DATA_PATH = "tradestrat/data/sp500_prices.csv"
+DATA = pd.read_csv(DATA_PATH)
 
 
 class Strategy(abc.ABC):

@@ -171,7 +171,6 @@ class Momentum(Strategy):
         )
 
         final_weights = self.equal_weights_ls(final_ret)
-
         n_middle_col = int(np.floor(len(final_weights.columns) / 2))
         middle_col = final_weights.columns[n_middle_col]
         final_weights.loc[
@@ -185,6 +184,7 @@ class Momentum(Strategy):
 
 
 class Value(Strategy):
+
     """Stocks with cheap fundamentals tend to outperform stocks with expensive fundamentals
 
     See Fama,French (1992,2012) and Asness,Moskowitz,Pedersen(2013) for academic references.
@@ -196,6 +196,7 @@ class Value(Strategy):
         signal_name: str,
         perc: float,
     ) -> None:
+
         """
         Initialize Strategy class
 
@@ -219,6 +220,7 @@ class Value(Strategy):
         self.weights = self.get_weights()
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
+
         """
         Equally Weighted long and short Porfolios
 
@@ -244,6 +246,7 @@ class Value(Strategy):
         return final_df
 
     def get_weights(self) -> pd.DataFrame:
+
         """
         Calculate desired weights of strategy
 
@@ -267,6 +270,15 @@ class Value(Strategy):
         )
 
         final_weights = self.equal_weights_ls(final_ret)
+
+        n_middle_col = int(np.floor(len(final_weights.columns) / 2))
+        middle_col = final_weights.columns[n_middle_col]
+        final_weights.loc[
+            final_weights[final_weights > 0].sum(axis=1) == 0, :middle_col
+        ] = (1 / n_middle_col)
+        final_weights.loc[
+            final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
+        ] = -1 / (len(final_weights.columns) - n_middle_col)
 
         return final_weights
 
@@ -312,6 +324,7 @@ class trend_following(Strategy):
         self.min_periods = min_periods
         self.skip_period = skip_period
         self.wind = wind
+        self.max_weight = max_weight
         self.risk_free = risk_free
 
         if self.min_periods == None:
@@ -363,8 +376,16 @@ class trend_following(Strategy):
         pos = signal[signal > 0].div(signal[signal > 0].abs().sum(axis=1), axis=0)
         pos = pos.fillna(0)
 
-        weights = neg + pos
-        final_weights = weights.dropna(axis=0, how="all")
+        final_weights = neg + pos
+
+        n_middle_col = int(np.floor(len(final_weights.columns) / 2))
+        middle_col = final_weights.columns[n_middle_col]
+        final_weights.loc[
+            final_weights[final_weights > 0].sum(axis=1) == 0, :middle_col
+        ] = (1 / n_middle_col)
+        final_weights.loc[
+            final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
+        ] = -1 / (len(final_weights.columns) - n_middle_col)
 
         return final_weights
 
@@ -375,7 +396,7 @@ class LO_2MA(Strategy):
     vice versa.
 
     While the academic treatment of Moving averages is less theoretical than the other strategies here presented one
-    can look at Brock et al. (1992) for an academic work on moving average trading rules
+    can look at Brock et al. (1992) for an academic work on moving average trading rules.
     """
 
     def __init__(
@@ -414,7 +435,7 @@ class LO_2MA(Strategy):
         self.skip_period = skip_period
 
         if self.min_periods == None:
-            self.min_periods = np.floor(np.min([MA_long_wind, MA_short_wind]) / 2)
+            self.min_periods = np.floor(np.min([MA1_wind, MA2_wind]) / 2)
 
         if MA_long_wind < MA_short_wind:
             raise ValueError("MA_long_wind must be bigger than MA_short_wind")
@@ -462,5 +483,13 @@ class LO_2MA(Strategy):
 
         signal = np.where(ret_MA_short > ret_MA_long, 1.0, 0.0)
         final_weights = self.equal_weights_long(signal)
+        n_middle_col = int(np.floor(len(final_weights.columns) / 2))
+        middle_col = final_weights.columns[n_middle_col]
+        final_weights.loc[
+            final_weights[final_weights > 0].sum(axis=1) == 0, :middle_col
+        ] = (1 / n_middle_col)
+        final_weights.loc[
+            final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
+        ] = -1 / (len(final_weights.columns) - n_middle_col)
 
         return final_weights

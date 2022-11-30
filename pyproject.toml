@@ -10,7 +10,10 @@ requires-python = ">=3.8"
 [project.optional-dependencies]
 test = [
   "pytest",
-  "uncertainties"
+  "uncertainties",
+  "numpy",
+  "pandas",
+  "matplotlib"
 ]
 
 [tool.pytest.ini_options]

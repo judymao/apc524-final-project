@@ -14,7 +14,7 @@ class Strategy(abc.ABC):
         Initialize Strategy class
 
         Args:
-            data: list of tickers to be considered in universe OR
+            data: list of tickers to be considered in universe (if you are only using price data) OR
                   dictionary of DataFrames, each containing dates along rows and tickers along columns,
                   with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
 
@@ -24,18 +24,25 @@ class Strategy(abc.ABC):
 
         if type(data) == list:
             # TODO: CURRENTLY USING DUMMY DATA
-            self.data = DATA[data].copy()
+            if data == ["all"]:
+                self.data = DATA.copy()
+            else:
+                self.data = DATA[data].copy()
+
             self.data["Date"] = pd.to_datetime(DATA["Date"])
             self.data.set_index("Date", inplace=True)
             # TODO: raise errors
         elif type(data) == dict:
             self.data = data["price"]
+            self.strategy_data = data
         else:
             raise TypeError(
                 "data must either be a list of tickers or a dictionary of dataframes"
             )
-
-        self.weights = self.get_weights()
+        try:
+            self.weights = self.get_weights()
+        except:
+            pass
 
     @abc.abstractmethod
     def get_weights(self) -> pd.DataFrame:
@@ -54,6 +61,7 @@ class Strategy(abc.ABC):
 
 
 class Momentum(Strategy):
+
     """
     An asset's recent relative performance tends to continue in the near future.
 
@@ -99,6 +107,7 @@ class Momentum(Strategy):
         self.weights = self.get_weights()
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
+
         """
         Equally Weighted long and short Porfolios
 
@@ -115,9 +124,9 @@ class Momentum(Strategy):
         port_long = portfolio.where(portfolio > 0, 0)
         port_short = portfolio.where(portfolio < 0, 0)
         n_long = (port_long.fillna(0) != 0).astype(int).sum(axis=1)
-        n_short = (port_long.fillna(0) != 0).astype(int).sum(axis=1)
+        n_short = (port_short.fillna(0) != 0).astype(int).sum(axis=1)
         port_long = port_long.div(n_long, axis=0)
-        port_short = port_short.div(n_long, axis=0)
+        port_short = port_short.div(n_short, axis=0)
         port_long[np.isnan(port_long)] = 0
         port_short[np.isnan(port_short)] = 0
 
@@ -125,6 +134,7 @@ class Momentum(Strategy):
         return final_df
 
     def get_weights(self) -> pd.DataFrame:
+
         """
         Calculate desired weights of strategy
 
@@ -137,7 +147,11 @@ class Momentum(Strategy):
 
         """
         # Signal
-        ret_data = self.data["returns"]
+        try:
+            ret_data = self.strategy_data["returns"]
+        except:
+            ret_data = np.log(self.data) - np.log(self.data.shift(1))
+
         lookback = (
             np.exp(
                 ret_data.shift(self.skip_period)
@@ -146,7 +160,7 @@ class Momentum(Strategy):
             )
             - 1
         )
-        rsd = np.exp(ret_data).rolling(21 * lookback_period).std()
+        rsd = np.exp(ret_data).rolling(21 * self.lookback_period).std()
         _signal = lookback / rsd
 
         # Weights
@@ -289,7 +303,6 @@ class trend_following(Strategy):
         self.min_periods = min_periods
         self.skip_period = skip_period
         self.wind = wind
-        self.max_weight = max_weight
         self.risk_free = risk_free
 
         if self.min_periods == None:
@@ -392,7 +405,7 @@ class LO_2MA(Strategy):
         self.skip_period = skip_period
 
         if self.min_periods == None:
-            self.min_periods = np.floor(np.min([MA1_wind, MA2_wind]) / 2)
+            self.min_periods = np.floor(np.min([MA_long_wind, MA_short_wind]) / 2)
 
         if MA_long_wind < MA_short_wind:
             raise ValueError("MA_long_wind must be bigger than MA_short_wind")

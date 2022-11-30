@@ -174,9 +174,12 @@ class Momentum(Strategy):
 
         n_middle_col = int(np.floor(len(final_weights.columns) / 2))
         middle_col = final_weights.columns[n_middle_col]
-        final_weights.loc[final_weights[final_weights > 0].sum(axis=1) == 0, :middle_col] = 1 / n_middle_col
-        final_weights.loc[final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:] = -1 / (
-                    len(final_weights.columns) - n_middle_col)
+        final_weights.loc[
+            final_weights[final_weights > 0].sum(axis=1) == 0, :middle_col
+        ] = (1 / n_middle_col)
+        final_weights.loc[
+            final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
+        ] = -1 / (len(final_weights.columns) - n_middle_col)
 
         return final_weights
 

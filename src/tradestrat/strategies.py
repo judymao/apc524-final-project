@@ -65,9 +65,28 @@ class Momentum(Strategy):
             data: list[str] | dict[str, pd.DataFrame],
             lookback_period: int,
             min_periods: int | None,
-            skip_period: int,
-            perc: float,
+            skip_period: int = 0,
+            perc: float = 0.1,
     ) -> None:
+        """
+        Initialize Strategy class
+
+        Args:
+            data: list of tickers to be considered in universe OR
+                  dictionary of DataFrames, each containing dates along rows and tickers along columns,
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+            lookback_period: Number of months used to calculate returns of assets.
+            min_periods: Minimal periods of data necessary for weights to be non-empty while calculating rolling
+                         returns
+            skip_period: Number of days that should be skipped for returns to start being calculated.
+            perc: percentage of assets you would like to be long and short. It must be written in percentage form.
+                  If 0.1 is the input, the strategy will buy the signal's highest 10% assets and short the signal's 10%
+                  lowest 10% assets.
+
+            Return:
+                None
+            """
+
         super().__init__(data)
         self.lookback_period = lookback_period
         self.min_periods = min_periods
@@ -154,6 +173,22 @@ class Value(Strategy):
             signal_name: str,
             perc: float,
     ) -> None:
+        """
+        Initialize Strategy class
+
+        Args:
+             data: list of tickers to be considered in universe OR
+                  dictionary of DataFrames, each containing dates along rows and tickers along columns,
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+             signal_name: Name of the signal being used. Must be the same as the name of data. Ex: "PE","EVEBITDA".
+             perc: percentage of assets you would like to be long and short. It must be written in percentage form.
+                   If 0.1 is the input, the strategy will buy the signal's highest 10% assets and short the signal's 10%
+                   lowest 10% assets.
+
+        Return:
+            None
+            """
+
         super().__init__(data)
         self.perc = perc
         self.signal_name = signal_name
@@ -227,10 +262,28 @@ class trend_following(Strategy):
             min_periods: int | None,
             skip_period: int,
             wind: int,
-            max_weight: float,
             risk_free: bool = False,
-
     ) -> None:
+
+        """
+        Initialize Strategy class
+
+        Args:
+            data: list of tickers to be considered in universe OR
+                  dictionary of DataFrames, each containing dates along rows and tickers along columns,
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+            lookback_period: Number of months used to calculate returns of assets.
+            min_periods: Minimal periods of data necessary for weights to be non-empty while calculating rolling
+                         returns
+            skip_period: Number of days that should be skipped for returns to start being calculated.
+            wind: Size of window (in months) used to determine an asset's performance
+            perc: percentage of assets you would like to be long and short. It must be written in percentage form.
+                  If 0.1 is the input, the strategy will buy the signal's highest 10% assets and short the signal's 10%
+                  lowest 10% assets.
+
+        Return:
+            None
+        """
         super().__init__(data)
         self.lookback_period = lookback_period
         self.min_periods = min_periods
@@ -269,9 +322,9 @@ class trend_following(Strategy):
 
         else:
             rf = self.data["risk_free"]
-            rf_lookback = ((risk_free + 1).shift(aux).rolling(self.wind, min_periods=self.min_periods).prod()) - 1
+            rf_lookback = ((rf + 1).shift(aux).rolling(self.wind, min_periods=self.min_periods).prod()) - 1
             lookback_adj = lookback.sub(rf_lookback, axis=0)
-            signal = lookback / vol
+            signal = lookback_adj / vol
 
         neg = signal[signal < 0].div(signal[signal < 0].abs().sum(axis=1), axis=0)
         neg = neg.fillna(0)
@@ -280,9 +333,5 @@ class trend_following(Strategy):
 
         weights = neg + pos
         final_weights = weights.dropna(axis=0, how="all")
-
-        if self.max_weight != None:
-            final_weights[final_weights < -1 * self.max_weight] = -1 * self.max_weight
-            final_weights[final_weights > self.max_weight] = self.max_weight
 
         return final_weights

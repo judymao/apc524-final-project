@@ -61,12 +61,12 @@ class Momentum(Strategy):
     """
 
     def __init__(
-            self,
-            data: list[str] | dict[str, pd.DataFrame],
-            lookback_period: int,
-            min_periods: int | None,
-            skip_period: int = 0,
-            perc: float = 0.1,
+        self,
+        data: list[str] | dict[str, pd.DataFrame],
+        lookback_period: int,
+        min_periods: int | None,
+        skip_period: int = 0,
+        perc: float = 0.1,
     ) -> None:
         """
         Initialize Strategy class
@@ -85,7 +85,7 @@ class Momentum(Strategy):
 
             Return:
                 None
-            """
+        """
 
         super().__init__(data)
         self.lookback_period = lookback_period
@@ -139,12 +139,12 @@ class Momentum(Strategy):
         # Signal
         ret_data = self.data["returns"]
         lookback = (
-                np.exp(
-                    ret_data.shift(self.skip_period)
-                        .rolling(21 * self.lookback_period)
-                        .sum()
-                )
-                - 1
+            np.exp(
+                ret_data.shift(self.skip_period)
+                .rolling(21 * self.lookback_period)
+                .sum()
+            )
+            - 1
         )
         rsd = np.exp(ret_data).rolling(21 * lookback_period).std()
         _signal = lookback / rsd
@@ -168,10 +168,10 @@ class Value(Strategy):
     """
 
     def __init__(
-            self,
-            data: list[str] | dict[str, pd.DataFrame],
-            signal_name: str,
-            perc: float,
+        self,
+        data: list[str] | dict[str, pd.DataFrame],
+        signal_name: str,
+        perc: float,
     ) -> None:
         """
         Initialize Strategy class
@@ -187,7 +187,7 @@ class Value(Strategy):
 
         Return:
             None
-            """
+        """
 
         super().__init__(data)
         self.perc = perc
@@ -222,16 +222,16 @@ class Value(Strategy):
 
     def get_weights(self) -> pd.DataFrame:
         """
-                Calculate desired weights of strategy
+        Calculate desired weights of strategy
 
-                Args:
-                    None
+        Args:
+            None
 
-                Return:
-                    Calculate the desired weights of this strategy per day per asset. Each day is a row and each asset is a
-                    column
+        Return:
+            Calculate the desired weights of this strategy per day per asset. Each day is a row and each asset is a
+            column
 
-                """
+        """
 
         # Signal
         _signal = self.data[self.signal_name]
@@ -256,13 +256,13 @@ class trend_following(Strategy):
     """
 
     def __init__(
-            self,
-            data: list[str] | dict[str, pd.DataFrame],
-            lookback_period: int,
-            min_periods: int | None,
-            skip_period: int,
-            wind: int,
-            risk_free: bool = False,
+        self,
+        data: list[str] | dict[str, pd.DataFrame],
+        lookback_period: int,
+        min_periods: int | None,
+        skip_period: int,
+        wind: int,
+        risk_free: bool = False,
     ) -> None:
 
         """
@@ -312,7 +312,12 @@ class trend_following(Strategy):
         ret_data = self.data["returns"]
 
         aux = self.skip_period
-        lookback = ((ret_data + 1).shift(aux).rolling(self.wind, min_periods=self.min_periods).prod()) - 1
+        lookback = (
+            (ret_data + 1)
+            .shift(aux)
+            .rolling(self.wind, min_periods=self.min_periods)
+            .prod()
+        ) - 1
 
         vol = ret_data.rolling(self.wind, min_periods=self.min_periods).std()
 
@@ -322,7 +327,12 @@ class trend_following(Strategy):
 
         else:
             rf = self.data["risk_free"]
-            rf_lookback = ((rf + 1).shift(aux).rolling(self.wind, min_periods=self.min_periods).prod()) - 1
+            rf_lookback = (
+                (rf + 1)
+                .shift(aux)
+                .rolling(self.wind, min_periods=self.min_periods)
+                .prod()
+            ) - 1
             lookback_adj = lookback.sub(rf_lookback, axis=0)
             signal = lookback_adj / vol
 
@@ -336,22 +346,23 @@ class trend_following(Strategy):
 
         return final_weights
 
-class LO_2MA(Strategy):
-    """ Trading strategy based on the moving averages of returns. Moving Average signals are very flexible and the
-      version implemented here buys an asset when the short term average crosses above the long term moving average and
-      vice versa.
 
-      While the academic treatment of Moving averages is less theoretical than the other strategies here presented one
-      can look at Brock et al. (1992) for an academic work on moving average trading rules
-      """
+class LO_2MA(Strategy):
+    """Trading strategy based on the moving averages of returns. Moving Average signals are very flexible and the
+    version implemented here buys an asset when the short term average crosses above the long term moving average and
+    vice versa.
+
+    While the academic treatment of Moving averages is less theoretical than the other strategies here presented one
+    can look at Brock et al. (1992) for an academic work on moving average trading rules
+    """
 
     def __init__(
-            self,
-            data: list[str] | dict[str, pd.DataFrame],
-            MA_long_wind: int,
-            MA_short_wind: int,
-            min_periods: int | None,
-            skip_period: int = 0,
+        self,
+        data: list[str] | dict[str, pd.DataFrame],
+        MA_long_wind: int,
+        MA_short_wind: int,
+        min_periods: int | None,
+        skip_period: int = 0,
     ) -> None:
 
         """
@@ -384,9 +395,7 @@ class LO_2MA(Strategy):
             self.min_periods = np.floor(np.min([MA1_wind, MA2_wind]) / 2)
 
         if MA_long_wind < MA_short_wind:
-            raise ValueError(
-                "MA_long_wind must be bigger than MA_short_wind"
-            )
+            raise ValueError("MA_long_wind must be bigger than MA_short_wind")
 
         self.weights = self.get_weights()
 
@@ -422,8 +431,12 @@ class LO_2MA(Strategy):
         """
 
         ret_data = self.data["returns"]
-        ret_MA_long = ret_data.rolling(window=self.MA_long_wind, min_periods=self.min_periods).mean()
-        ret_MA_short = ret_data.rolling(window=self.MA_short_wind, min_periods=self.min_periods).mean()
+        ret_MA_long = ret_data.rolling(
+            window=self.MA_long_wind, min_periods=self.min_periods
+        ).mean()
+        ret_MA_short = ret_data.rolling(
+            window=self.MA_short_wind, min_periods=self.min_periods
+        ).mean()
 
         signal = np.where(ret_MA_short > ret_MA_long, 1.0, 0.0)
         final_weights = self.equal_weights_long(signal)

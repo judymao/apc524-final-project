@@ -335,3 +335,97 @@ class trend_following(Strategy):
         final_weights = weights.dropna(axis=0, how="all")
 
         return final_weights
+
+class LO_2MA(Strategy):
+    """ Trading strategy based on the moving averages of returns. Moving Average signals are very flexible and the
+      version implemented here buys an asset when the short term average crosses above the long term moving average and
+      vice versa.
+
+      While the academic treatment of Moving averages is less theoretical than the other strategies here presented one
+      can look at Brock et al. (1992) for an academic work on moving average trading rules
+      """
+
+    def __init__(
+            self,
+            data: list[str] | dict[str, pd.DataFrame],
+            MA_long_wind: int,
+            MA_short_wind: int,
+            min_periods: int | None,
+            skip_period: int = 0,
+    ) -> None:
+
+        """
+        Initialize Strategy class
+
+        Args:
+            data: list of tickers to be considered in universe OR
+                  dictionary of DataFrames, each containing dates along rows and tickers along columns,
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+            MA_long_wind: number of days to calculate the long Moving Average. Must be bigger than MA_short_wind
+            MA_short_wind: number of days to calculate the short Moving Average.
+            min_periods: Minimal periods of data necessary for weights to be non-empty while calculating rolling
+                         returns
+            skip_period: Number of days that should be skipped for returns to start being calculated.
+            perc: percentage of assets you would like to be long and short. It must be written in percentage form.
+                  If 0.1 is the input, the strategy will buy the signal's highest 10% assets and short the signal's 10%
+                  lowest 10% assets.
+
+        Return:
+            None
+        """
+
+        super().__init__(data)
+        self.MA_long_wind = MA_long_wind
+        self.MA_short_wind = MA_short_wind
+        self.min_periods = min_periods
+        self.skip_period = skip_period
+
+        if self.min_periods == None:
+            self.min_periods = np.floor(np.min([MA1_wind, MA2_wind]) / 2)
+
+        if MA_long_wind < MA_short_wind:
+            raise ValueError(
+                "MA_long_wind must be bigger than MA_short_wind"
+            )
+
+        self.weights = self.get_weights()
+
+    def equal_weights_long(self, portfolio: pd.DataFrame) -> pd.DataFrame:
+
+        """
+        Equally Weighted long Porfolios
+
+        Args:
+            portfolio: dataframe with equal positive values in assets you want to buy.
+
+        Return:
+            Dataframe of equally weighted long portfolios. Long positions sums to 100%
+
+        """
+
+        n_long = (portfolio.fillna(0) != 0).astype(int).sum(axis=1)
+        port_long = portfolio.div(n_long, axis=0)
+        port_long[np.isnan(port_long)] = 0
+
+        return port_long
+
+    def get_weights(self) -> pd.DataFrame:
+        """
+        Calculate desired weights of strategy
+
+        Args:
+            None
+
+        Return:
+            Calculate the desired weights of this strategy per day per asset. Each day is a row and each asset is a
+            column
+        """
+
+        ret_data = self.data["returns"]
+        ret_MA_long = ret_data.rolling(window=self.MA_long_wind, min_periods=self.min_periods).mean()
+        ret_MA_short = ret_data.rolling(window=self.MA_short_wind, min_periods=self.min_periods).mean()
+
+        signal = np.where(ret_MA_short > ret_MA_long, 1.0, 0.0)
+        final_weights = self.equal_weights_long(signal)
+
+        return final_weights

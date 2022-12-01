@@ -27,36 +27,24 @@ mom_test = Momentum(
 
 
 def test_mom_weight_sum():
-    result = []
-    for v in mom_test.weights.sum(axis=1):
-        result.append(v == pytest.approx(0, abs=10e-10))
-
-    assert all(v == True for v in result)
+    assert mom_test.weights.sum(axis=1).values == pytest.approx(0, abs=10e-10)
 
 
 def test_mom_weight_legs():
-    result = []
-    for v in mom_test.weights[mom_test.weights > 0].sum(axis=1):
-        result.append(v == pytest.approx(1, abs=10e-10))
+    assert mom_test.weights[mom_test.weights > 0].sum(axis=1).values == pytest.approx(
+        1, abs=10e-10
+    )
 
-    assert all(v == True for v in result)
-
-    result = []
-    for v in mom_test.weights[mom_test.weights < 0].sum(axis=1):
-        result.append(v == pytest.approx(-1, abs=10e-10))
-
-    assert all(v == True for v in result)
+    assert mom_test.weights[mom_test.weights < 0].sum(axis=1).values == pytest.approx(
+        -1, abs=10e-10
+    )
 
 
 def test_mom_intraleg_weights():
-    result = []
-    for v in mom_test.weights[mom_test.weights > 0].apply(pd.Series.nunique, axis=1):
-        result.append(v == pytest.approx(1, abs=10e-10))
+    assert mom_test.weights[mom_test.weights > 0].apply(
+        pd.Series.nunique, axis=1
+    ).values == pytest.approx(1, abs=10e-10)
 
-    assert all(v == True for v in result)
-
-    result = []
-    for v in mom_test.weights[mom_test.weights < 0].apply(pd.Series.nunique, axis=1):
-        result.append(v == pytest.approx(1, abs=10e-10))
-
-    assert all(v == True for v in result)
+    assert mom_test.weights[mom_test.weights < 0].apply(
+        pd.Series.nunique, axis=1
+    ).values == pytest.approx(1, abs=10e-10)

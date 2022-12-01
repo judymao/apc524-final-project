@@ -495,6 +495,7 @@ class LO_2MA(Strategy):
 
         return final_weights
 
+
 class MachineLearningMethod(Strategy):
     def __init__(self, data: list[str] | dict[str, pd.DataFrame]) -> None:
         """

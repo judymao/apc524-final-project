@@ -1,12 +1,11 @@
 # Imports
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import datetime
 
 import numpy as np
-import pandas as pd  # type: ignore[import]
-from matplotlib import pyplot as plt  # type: ignore[import]
+import pandas as pd
+from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
 from .strategies import Strategy

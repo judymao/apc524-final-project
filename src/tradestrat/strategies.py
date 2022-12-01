@@ -3,9 +3,12 @@ from __future__ import annotations
 import abc
 
 import numpy as np
-import pandas as pd  # type: ignore[import]
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 
-DATA = pd.read_csv("tradestrat/data/sp500_prices.csv")
+DATA_PATH = "tradestrat/data/sp500_prices.csv"
+DATA = pd.read_csv(DATA_PATH)
 
 
 class Strategy(abc.ABC):
@@ -120,7 +123,6 @@ class Momentum(Strategy):
             sum to -100%
 
         """
-
         port_long = portfolio.where(portfolio > 0, 0)
         port_short = portfolio.where(portfolio < 0, 0)
         n_long = (port_long.fillna(0) != 0).astype(int).sum(axis=1)
@@ -492,3 +494,121 @@ class LO_2MA(Strategy):
         ] = -1 / (len(final_weights.columns) - n_middle_col)
 
         return final_weights
+
+class MachineLearningMethod(Strategy):
+    def __init__(self, data: list[str] | dict[str, pd.DataFrame]) -> None:
+        """
+        Initialize MachineLearningMethod class
+        Args:
+            list of tickers to be considered in universe OR
+                  dictionary of DataFrames, each containing dates along rows and tickers along columns,
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+        Return:
+            None
+        """
+        super().__init__(data)
+
+        self.weights = self.get_weights()
+
+    def predict_returns(
+        self,
+        model: str = "lr",
+        lookahead: int = 1,
+        max_lag: int = 10,
+        daily: bool = True,
+    ) -> pd.DataFrame:
+        """
+        Get predicted daily returns lookahead days into the future
+        Args:
+            model: one of 'lr' or 'rf'. If 'lr', then linear regression is used, otherwise random forest regression
+            lookahead: number of days ahead to predict return for [default 1]
+            max_lag: number of lagged returns to use as features for predicting future daily return
+            daily: if True, return daily return, else return annual return [default True]
+        Return:
+            average predicted daily return over the test period for each stock
+        """
+        if model not in ["lr", "rf"]:
+            raise ValueError("model must be one of: ['lr', 'rf']")
+
+        if lookahead < 1:
+            raise ValueError("lookahead must be at least 1")
+
+        if lookahead > len(self.data):
+            raise ValueError("lookahead is too large")
+
+        if max_lag < 1:
+            raise ValueError("max_lag must be at least 1")
+
+        if max_lag > len(self.data):
+            raise ValueError("max_lag is too large")
+
+        if type(daily) != bool:
+            raise TypeError("daily must be a Boolean")
+
+        # get daily returns
+        returns = self.data.pct_change(1)
+        returns = returns.iloc[1:]
+        stocks = self.data.columns
+
+        # define training set size
+        train_size = 0.7
+        n = len(returns)
+        n_train = int(n * train_size)
+
+        # variables to store the return information
+        avg_pred_returns = []
+
+        for stock in stocks:
+            # get features
+            stock_data = returns[[stock]].copy()
+            for i in range(max_lag):
+                lag = i + 1
+                stock_data[f"lag{lag}"] = stock_data[stock].shift(lag)
+
+            stock_data["y"] = stock_data[stock].shift(-lookahead)
+
+            # remove missing rows of data
+            stock_data = stock_data[max_lag:]
+            train_data = stock_data.iloc[:n_train]
+            test_data = stock_data.iloc[n_train:]
+
+            # separate dataset into training and testing
+            X_train = train_data.drop(columns="y")
+            y_train = train_data["y"]
+
+            X_test = test_data.drop(columns="y")
+
+            # build machine learning model
+            if model == "lr":
+                lr = LinearRegression(fit_intercept=True).fit(X_train, y_train)
+                y_pred = lr.predict(X_test)
+
+            else:
+                rf = RandomForestRegressor().fit(X_train, y_train)
+                y_pred = rf.predict(X_test)
+
+            if not daily:
+                y_pred = (1 + y_pred) ** 252 - 1
+
+            # save this stock's average predicted return
+            avg_pred_return = np.mean(y_pred)
+            avg_pred_returns.append(avg_pred_return)
+
+        predicted_returns = pd.DataFrame(
+            {"stock": stocks, "pred_return": avg_pred_returns}
+        )
+
+        return predicted_returns
+
+    def get_weights(self) -> pd.DataFrame:
+        """
+        Get strategy weights over time
+
+        Args:
+            ...
+
+        Return:
+            DataFrame containing dates along rows and tickers along columns, with values being the strategy weights
+
+        """
+        ...

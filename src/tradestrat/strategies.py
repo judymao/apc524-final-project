@@ -623,6 +623,10 @@ class MachineLearningMethod(Strategy):
             DataFrame containing dates along rows and tickers along columns, with values being the strategy weights
 
         """
+
+        if len(self.data.columns) < 5:
+            raise ValueError("Need at least 5 stocks")
+
         # get predicted returns
         df = self.predict_returns(model, lookahead, max_lag, daily=False)
 

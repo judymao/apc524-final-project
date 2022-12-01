@@ -1,7 +1,6 @@
 # type: ignore
 
 import os
-import sys
 
 os.chdir(os.path.abspath(os.path.join("src")))
 from datetime import date

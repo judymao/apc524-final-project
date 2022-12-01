@@ -205,6 +205,7 @@ class MachineLearningMethod(Strategy):
         """
         Get predicted daily returns lookahead days into the future
         Args:
+            model: one of 'lr' or 'rf'. If 'lr', then linear regression is used, otherwise random forest regression
             lookahead: number of days ahead to predict return for [default 1]
             max_lag: number of lagged returns to use as features for predicting future daily return
             daily: if True, return daily return, else return annual return [default True]

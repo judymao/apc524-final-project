@@ -13,7 +13,8 @@ test = [
   "uncertainties",
   "numpy",
   "pandas",
-  "matplotlib"
+  "matplotlib",
+  "scikit-learn"
 ]
 
 [tool.pytest.ini_options]
@@ -35,7 +36,7 @@ warn_unreachable = true
 
 # disable imports or control per-module/file settings here
 [[tool.mypy.overrides]]
-module = [ "numpy.*", ]
+module = [ "numpy.*",  "sklearn.*", "pandas.*", "matplotlib.*",]
 ignore_missing_imports = true
 
 [tool.isort]

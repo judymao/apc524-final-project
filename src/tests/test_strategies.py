@@ -1,17 +1,18 @@
 # type: ignore
+import os
+import warnings
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from tradestrat.strategies import Momentum, Strategy, Value
+from src.tradestrat.strategies import Momentum, Value
 
-DATA = pd.read_csv(
-    "/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/tradestrat/data/sp500_prices.csv"
-)
+warnings.filterwarnings("ignore")
+
+DATA = pd.read_csv("tradestrat/data/sp500_prices.csv")
 
 px_last = pd.read_csv(
-    "/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/"
     "tradestrat/data/sp500_prices.csv",
     index_col="Date",
 )
@@ -26,22 +27,36 @@ mom_test = Momentum(
 
 
 def test_mom_weight_sum():
-    assert (mom_test.weights.sum(axis=1) == pytest.approx(0)).all()
+    result = []
+    for v in mom_test.weights.sum(axis=1):
+        result.append(v == pytest.approx(0, abs=10e-10))
+
+    assert all(v == True for v in result)
 
 
 def test_mom_weight_legs():
-    assert (
-        mom_test.weights[mom_test.weights > 0].sum(axis=1) == pytest.approx(1)
-    ).all()
-    assert (
-        mom_test.weights[mom_test.weights < 0].sum(axis=1) == pytest.approx(-1)
-    ).all()
+    result = []
+    for v in mom_test.weights[mom_test.weights > 0].sum(axis=1):
+        result.append(v == pytest.approx(1, abs=10e-10))
+
+    assert all(v == True for v in result)
+
+    result = []
+    for v in mom_test.weights[mom_test.weights < 0].sum(axis=1):
+        result.append(v == pytest.approx(-1, abs=10e-10))
+
+    assert all(v == True for v in result)
 
 
 def test_mom_intraleg_weights():
-    assert (
-        mom_test.weights[mom_test.weights > 0].apply(pd.Series.nunique, axis=1) == 1
-    ).all()
-    assert (
-        mom_test.weights[mom_test.weights < 0].apply(pd.Series.nunique, axis=1) == -1
-    ).all()
+    result = []
+    for v in mom_test.weights[mom_test.weights > 0].apply(pd.Series.nunique, axis=1):
+        result.append(v == pytest.approx(1, abs=10e-10))
+
+    assert all(v == True for v in result)
+
+    result = []
+    for v in mom_test.weights[mom_test.weights < 0].apply(pd.Series.nunique, axis=1):
+        result.append(v == pytest.approx(1, abs=10e-10))
+
+    assert all(v == True for v in result)

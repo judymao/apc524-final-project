@@ -324,7 +324,6 @@ class trend_following(Strategy):
         self.min_periods = min_periods
         self.skip_period = skip_period
         self.wind = wind
-        self.max_weight = max_weight
         self.risk_free = risk_free
 
         if self.min_periods == None:
@@ -435,7 +434,7 @@ class LO_2MA(Strategy):
         self.skip_period = skip_period
 
         if self.min_periods == None:
-            self.min_periods = np.floor(np.min([MA1_wind, MA2_wind]) / 2)
+            self.min_periods = np.floor(np.min([MA_short_wind, MA_long_wind]) / 2)
 
         if MA_long_wind < MA_short_wind:
             raise ValueError("MA_long_wind must be bigger than MA_short_wind")

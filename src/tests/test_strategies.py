@@ -1,4 +1,7 @@
 # type: ignore
+import os
+
+os.chdir(os.path.abspath(os.path.join("src")))
 
 import numpy as np
 import pandas as pd
@@ -22,6 +25,7 @@ mom_test = Momentum(
 )
 
 ml_test = MachineLearningMethod(data=["AAPL", "IBM", "A", "MSFT", "AMZN"])
+portfolio = ml_test.weights
 
 
 @pytest.mark.parametrize("strategy", [mom_test, ml_test])

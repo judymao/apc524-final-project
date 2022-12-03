@@ -599,6 +599,27 @@ class MachineLearningMethod(Strategy):
 
         return predicted_returns
 
+    def weight_norm_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
+        """
+        Normalize weights to sum up to 1 in long leg and -1 in short leg
+
+        Args:
+            port: dataframe with weights ( each asset in a column and each date in a row).
+
+        Return:
+            Dataframe of normalized weights long and short portfolios. Long positions sums to 100%, short positions
+            sum to -100%
+        """
+
+        port_long = portfolio.where(portfolio > 0, 0)
+        port_short = portfolio.where(portfolio < 0, 0)
+        sum_long = port_long.sum(axis=1)
+        sum_short = abs(port_short.sum(axis=1))
+        port_long = port_long.div(sum_long, axis=0)
+        port_short = port_short.div(sum_short, axis=0)
+        final_df = port_long + port_short
+        return final_df
+
     def get_weights(
         self,
         model: str = "lr",
@@ -663,5 +684,5 @@ class MachineLearningMethod(Strategy):
         weights_df = pd.DataFrame(np.repeat(df_rotate.values, len(self.data), axis=0))
         weights_df.columns = df_rotate.columns
         weights_df.index = self.data.index
-
+        weights_df = self.weight_norm_ls(weights_df)
         return weights_df

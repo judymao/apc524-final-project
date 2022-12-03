@@ -26,7 +26,6 @@ class Strategy(abc.ABC):
         """
 
         if type(data) == list:
-            # TODO: CURRENTLY USING DUMMY DATA
             if data == ["all"]:
                 self.data = DATA.copy()
             else:
@@ -34,7 +33,6 @@ class Strategy(abc.ABC):
 
             self.data["Date"] = pd.to_datetime(DATA["Date"])
             self.data.set_index("Date", inplace=True)
-            # TODO: raise errors
         elif type(data) == dict:
             self.data = data["price"]
             self.strategy_data = data
@@ -601,15 +599,90 @@ class MachineLearningMethod(Strategy):
 
         return predicted_returns
 
-    def get_weights(self) -> pd.DataFrame:
+    def weight_norm_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
+        """
+        Normalize weights to sum up to 1 in long leg and -1 in short leg
+
+        Args:
+            port: dataframe with weights ( each asset in a column and each date in a row).
+
+        Return:
+            Dataframe of normalized weights long and short portfolios. Long positions sums to 100%, short positions
+            sum to -100%
+        """
+
+        port_long = portfolio.where(portfolio > 0, 0)
+        port_short = portfolio.where(portfolio < 0, 0)
+        sum_long = port_long.sum(axis=1)
+        sum_short = abs(port_short.sum(axis=1))
+        port_long = port_long.div(sum_long, axis=0)
+        port_short = port_short.div(sum_short, axis=0)
+        final_df = port_long + port_short
+        return final_df
+
+    def get_weights(
+        self,
+        model: str = "lr",
+        lookahead: int = 1,
+        max_lag: int = 10,
+        n_long: int = 2,
+        n_short: int = 2,
+        rf_rate: float = 0.01,
+    ) -> pd.DataFrame:
         """
         Get strategy weights over time
 
         Args:
-            ...
+            model: one of 'lr' or 'rf'. If 'lr', then linear regression is used, otherwise random forest regression
+            lookahead: number of days ahead to predict return for [default 1]
+            max_lag: number of lagged returns to use as features for predicting future daily return
+            n_long: number of stocks to long
+            n_short: number of stocks to short
+            rf_rate: risk free rate
 
         Return:
             DataFrame containing dates along rows and tickers along columns, with values being the strategy weights
 
         """
-        ...
+
+        if len(self.data.columns) < 5:
+            raise ValueError("Need at least 5 stocks")
+
+        # get predicted returns
+        df = self.predict_returns(model, lookahead, max_lag, daily=False)
+
+        # sort values based on predicted returns
+        df_sorted = df.sort_values(by=["pred_return"])
+
+        # subtract risk-free rate
+        df_sorted["pred_return"] -= rf_rate
+
+        # get stocks to long and short based on their relative predicted returns
+        short_stocks = df_sorted.iloc[:n_short].copy()
+        long_stocks = df_sorted.iloc[-n_long:].copy()
+
+        # concatenate stocks of interest and normalize
+        df_concat = pd.concat((short_stocks, long_stocks))
+        df_concat["weight"] = df_concat["pred_return"] - df_concat["pred_return"].mean()
+
+        # incorporate stocks that we do not want to long or short (set weight to 0)
+        n_zeros = len(df) - n_long - n_short
+        weights = np.concatenate(
+            (
+                np.array(df_concat["weight"].iloc[:n_short]),
+                np.array(np.zeros(n_zeros)),
+                np.array(df_concat["weight"].iloc[-n_long:]),
+            )
+        )
+
+        # rearrange dataframe to have output in a form consistent with other strategies
+        df_sorted["weight"] = weights
+        df_sorted.drop(columns=["pred_return"], inplace=True)
+        df_rotate = df_sorted.T
+        df_rotate.columns = df_rotate.iloc[0]
+        df_rotate.drop(["stock"], inplace=True)
+        weights_df = pd.DataFrame(np.repeat(df_rotate.values, len(self.data), axis=0))
+        weights_df.columns = df_rotate.columns
+        weights_df.index = self.data.index
+        weights_df = self.weight_norm_ls(weights_df)
+        return weights_df

@@ -1,8 +1,6 @@
 # type: ignore
 
 import os
-
-os.chdir(os.path.abspath(os.path.join("src")))
 from datetime import date
 
 import numpy as np

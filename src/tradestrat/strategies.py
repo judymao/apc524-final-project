@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import abc
+import os
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
-DATA_PATH = "tradestrat/data/sp500_prices.csv"
+if os.getcwd()[-20:] == "apc524-final-project":
+    DATA_PATH = os.path.join(os.getcwd(), "src/tradestrat/data/sp500_prices.csv")
+else:
+    DATA_PATH = os.path.join(
+        os.path.relpath(os.path.dirname(__file__)), "data/sp500_prices.csv"
+    )
 DATA = pd.read_csv(DATA_PATH)
 
 

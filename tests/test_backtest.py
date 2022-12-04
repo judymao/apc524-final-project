@@ -2,14 +2,12 @@
 
 import os
 
-os.chdir(os.path.abspath(os.path.join("src")))
 from datetime import date
 
 import numpy as np
 import pytest
 
 from src.tradestrat import Backtest, Strategy
-
 
 class StrategyTest(Strategy):
     def get_weights(self):

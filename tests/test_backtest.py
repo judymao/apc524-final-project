@@ -1,13 +1,13 @@
 # type: ignore
 
 import os
-
 from datetime import date
 
 import numpy as np
 import pytest
 
 from src.tradestrat import Backtest, Strategy
+
 
 class StrategyTest(Strategy):
     def get_weights(self):

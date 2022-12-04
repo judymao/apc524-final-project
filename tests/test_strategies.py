@@ -10,11 +10,20 @@ from src.tradestrat import MachineLearningMethod, Momentum, Value
 DATA = pd.read_csv("src/tradestrat/data/sp500_prices.csv")
 
 MOM_TEST = Momentum(
-    data={"returns": (np.log(DATA.set_index("Date")) - np.log(DATA.set_index("Date").shift(1))), "price": DATA},
-          lookback_period=6, min_periods=120, skip_period=21, perc=10
+    data={
+        "returns": (
+            np.log(DATA.set_index("Date")) - np.log(DATA.set_index("Date").shift(1))
+        ),
+        "price": DATA,
+    },
+    lookback_period=6,
+    min_periods=120,
+    skip_period=21,
+    perc=10,
 )
 
 ML_TEST = MachineLearningMethod(data=["AAPL", "IBM", "A", "MSFT", "AMZN"])
+
 
 @pytest.mark.parametrize("strategy", [MOM_TEST, ML_TEST])
 def test_weights(strategy):

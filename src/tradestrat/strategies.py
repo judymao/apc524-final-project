@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 import abc
 
 import numpy as np
@@ -7,7 +8,10 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
+
 DATA_PATH = "tradestrat/data/sp500_prices.csv"
+
+DATA_PATH = "/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/src/tradestrat/data/sp500_prices.csv"
 DATA = pd.read_csv(DATA_PATH)
 
 
@@ -72,8 +76,8 @@ class Momentum(Strategy):
     def __init__(
         self,
         data: list[str] | dict[str, pd.DataFrame],
-        lookback_period: int,
-        min_periods: int | None,
+        lookback_period: int = 12,
+        min_periods: int | None = None,
         skip_period: int = 0,
         perc: float = 0.1,
     ) -> None:
@@ -103,9 +107,44 @@ class Momentum(Strategy):
         self.perc = perc
 
         if self.min_periods == None:
-            self.min_periods = self.lookback_period - 1
+            self.min_periods = (self.lookback_period-1)*21
 
         self.weights = self.get_weights()
+
+        if len(self.data.columns) < 1/perc:
+            raise ValueError("Given the percentage that was inputed you must provide a bigger number of stocks to have"
+                             " at least one stock in each leg")
+
+        if lookback_period < 1:
+            raise ValueError("lookback period must be at least 1")
+
+        if lookback_period > len(self.data):
+            raise ValueError("lookback period is too large")
+
+        if type(perc) != float:
+            raise ValueError("perc needs to be a float")
+
+        if perc <= 0:
+            raise ValueError("perc should be bigger than zero")
+
+        if perc >= 1:
+            raise ValueError("perc should be smaller than 1")
+
+        if min_periods < 0:
+            raise ValueError("min_periods should be bigger than 0")
+
+        if min_periods > lookback_period*21:
+            raise ValueError("your min_periods cannot be bigger than you lookback period")
+
+        if type(skip_period) != int:
+            raise ValueError("skip_period should be an integer")
+
+        if skip_period < 0:
+            raise ValueError("skip_period should be higher than zero")
+
+        if skip_period > len(self.data):
+            raise ValueError("skip_period period is too large")
+
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
 
@@ -146,11 +185,10 @@ class Momentum(Strategy):
             column
 
         """
+
         # Signal
-        try:
-            ret_data = self.strategy_data["returns"]
-        except:
-            ret_data = np.log(self.data) - np.log(self.data.shift(1))
+
+        ret_data = np.log(self.data) - np.log(self.data.shift(1))
 
         lookback = (
             np.exp(
@@ -167,7 +205,7 @@ class Momentum(Strategy):
         final_ret = _signal.copy()
         rank = final_ret.rank(axis=1, pct=True)
         final_ret[:] = np.where(
-            rank > (1 - self.perc / 100), 1, np.where(rank < self.perc / 100, -1, 0)
+            rank > (1 - self.perc ), 1, np.where(rank <= self.perc, -1, 0)
         )
 
         final_weights = self.equal_weights_ls(final_ret)
@@ -192,18 +230,18 @@ class Value(Strategy):
 
     def __init__(
         self,
-        data: list[str] | dict[str, pd.DataFrame],
-        signal_name: str,
-        perc: float,
+        data: dict[str, pd.DataFrame],
+        signal_name: str ='P_E',
+        perc: float = 0.1,
     ) -> None:
 
         """
         Initialize Strategy class
 
         Args:
-             data: list of tickers to be considered in universe OR
-                  dictionary of DataFrames, each containing dates along rows and tickers along columns,
-                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+             data: dictionary of DataFrames, each containing dates along rows and tickers along columns,
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...}). Must provide one dataframe with
+                  prices and one dataframe with value signal.
              signal_name: Name of the signal being used. Must be the same as the name of data. Ex: "PE","EVEBITDA".
              perc: percentage of assets you would like to be long and short. It must be written in percentage form.
                    If 0.1 is the input, the strategy will buy the signal's highest 10% assets and short the signal's 10%
@@ -218,6 +256,18 @@ class Value(Strategy):
         self.signal_name = signal_name
 
         self.weights = self.get_weights()
+
+        if type(perc) != float:
+            raise ValueError("perc needs to be a float")
+
+        if perc <= 0:
+            raise ValueError("perc should be bigger than zero")
+
+        if perc >= 1:
+            raise ValueError("perc should be smaller than 1")
+
+        if type(signal_name) != str:
+            raise ValueError("signal_name must be a string")
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
 
@@ -260,11 +310,15 @@ class Value(Strategy):
         """
 
         # Signal
-        _signal = self.data[self.signal_name]
+        try:
+            _signal = self.strategy_data[self.signal_name]
+        except:
+            raise ValueError('Could not find signal_name in the dictonary provided' )
 
         # Weights
         final_ret = _signal.copy()
         rank = final_ret.rank(axis=1, pct=True)
+
         final_ret[:] = np.where(
             rank > (1 - self.perc / 100), -1, np.where(rank < self.perc / 100, 1, 0)
         )
@@ -283,7 +337,7 @@ class Value(Strategy):
         return final_weights
 
 
-class trend_following(Strategy):
+class TrendFollowing(Strategy):
     """
     Stocks that performed poorly in the past tend to continue performing poorly and viceversa.
 
@@ -293,10 +347,9 @@ class trend_following(Strategy):
     def __init__(
         self,
         data: list[str] | dict[str, pd.DataFrame],
-        lookback_period: int,
-        min_periods: int | None,
-        skip_period: int,
-        wind: int,
+        min_periods: int | None = None,
+        skip_period: int = 0,
+        wind: int = 6,
         risk_free: bool = False,
     ) -> None:
 
@@ -307,29 +360,48 @@ class trend_following(Strategy):
             data: list of tickers to be considered in universe OR
                   dictionary of DataFrames, each containing dates along rows and tickers along columns,
                   with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
-            lookback_period: Number of months used to calculate returns of assets.
             min_periods: Minimal periods of data necessary for weights to be non-empty while calculating rolling
                          returns
             skip_period: Number of days that should be skipped for returns to start being calculated.
             wind: Size of window (in months) used to determine an asset's performance
-            perc: percentage of assets you would like to be long and short. It must be written in percentage form.
-                  If 0.1 is the input, the strategy will buy the signal's highest 10% assets and short the signal's 10%
-                  lowest 10% assets.
 
         Return:
             None
         """
         super().__init__(data)
-        self.lookback_period = lookback_period
         self.min_periods = min_periods
         self.skip_period = skip_period
         self.wind = wind
         self.risk_free = risk_free
-
+        #
         if self.min_periods == None:
-            self.min_periods = self.wind - 20
+            self.min_periods = self.wind*21 - 20
 
         self.weights = self.get_weights()
+
+
+        if self.min_periods < 0:
+            raise ValueError("min_periods should be bigger than 0")
+
+        if self.min_periods > wind*21:
+            raise ValueError("your min_periods cannot be bigger than you lookback period")
+
+        if type(skip_period) != int:
+            raise ValueError("skip_period should be an integer")
+
+        if type(risk_free) != bool:
+            raise ValueError("risk_free should be an boolean")
+
+        if wind < 0:
+            raise ValueError("wind should be bigger than 0")
+
+        if wind > len(self.data):
+            raise ValueError("wind is too large")
+
+        if type(wind) != int:
+            raise ValueError("wind should be an integer")
+
+
 
     def get_weights(self) -> pd.DataFrame:
         """
@@ -343,17 +415,17 @@ class trend_following(Strategy):
             column
 
         """
-        ret_data = self.data["returns"]
+        ret_data = np.log(self.data) - np.log(self.data.shift(1))
 
         aux = self.skip_period
         lookback = (
             (ret_data + 1)
             .shift(aux)
-            .rolling(self.wind, min_periods=self.min_periods)
-            .prod()
+            .rolling(self.wind*21, min_periods=self.min_periods)
+            .apply(np.prod, raw=True)
         ) - 1
 
-        vol = ret_data.rolling(self.wind, min_periods=self.min_periods).std()
+        vol = ret_data.rolling(self.wind*21, min_periods=self.min_periods).std()
 
         if self.risk_free == False:
 
@@ -364,7 +436,7 @@ class trend_following(Strategy):
             rf_lookback = (
                 (rf + 1)
                 .shift(aux)
-                .rolling(self.wind, min_periods=self.min_periods)
+                .rolling(self.wind*21, min_periods=self.min_periods)
                 .prod()
             ) - 1
             lookback_adj = lookback.sub(rf_lookback, axis=0)
@@ -389,7 +461,7 @@ class trend_following(Strategy):
         return final_weights
 
 
-class LO_2MA(Strategy):
+class LO2MA(Strategy):
     """Trading strategy based on the moving averages of returns. Moving Average signals are very flexible and the
     version implemented here buys an asset when the short term average crosses above the long term moving average and
     vice versa.
@@ -401,9 +473,9 @@ class LO_2MA(Strategy):
     def __init__(
         self,
         data: list[str] | dict[str, pd.DataFrame],
-        MA_long_wind: int,
-        MA_short_wind: int,
-        min_periods: int | None,
+        MA_long_wind: int = 200,
+        MA_short_wind: int = 42,
+        min_periods: int | None = None,
         skip_period: int = 0,
     ) -> None:
 
@@ -419,9 +491,6 @@ class LO_2MA(Strategy):
             min_periods: Minimal periods of data necessary for weights to be non-empty while calculating rolling
                          returns
             skip_period: Number of days that should be skipped for returns to start being calculated.
-            perc: percentage of assets you would like to be long and short. It must be written in percentage form.
-                  If 0.1 is the input, the strategy will buy the signal's highest 10% assets and short the signal's 10%
-                  lowest 10% assets.
 
         Return:
             None
@@ -439,7 +508,39 @@ class LO_2MA(Strategy):
         if MA_long_wind < MA_short_wind:
             raise ValueError("MA_long_wind must be bigger than MA_short_wind")
 
+        if type(MA_long_wind) != int:
+            raise ValueError("MA_long_wind must be an integer")
+
+        if type(MA_short_wind) != int:
+            raise ValueError("MA_short_wind must be an integer")
+
+        if MA_long_wind > 0:
+            raise ValueError("MA_long_wind must be bigger than zero")
+
+        if MA_short_wind > 0:
+            raise ValueError("MA_short_wind must be bigger than zero")
+
+        if MA_long_wind > len(self.data):
+            raise ValueError("MA_long_wind is too large")
+
+        if type(skip_period) != int:
+            raise ValueError("skip_period should be an integer")
+
+        if skip_period < 0:
+            raise ValueError("skip_period should be higher than zero")
+
+        if skip_period > len(self.data):
+            raise ValueError("skip_period period is too large")
+
+        if min_periods < 0:
+            raise ValueError("min_periods should be bigger than 0")
+
+        if min_periods > lookback_period*21:
+            raise ValueError("your min_periods cannot be bigger than you lookback period")
+
+
         self.weights = self.get_weights()
+
 
     def equal_weights_long(self, portfolio: pd.DataFrame) -> pd.DataFrame:
 
@@ -494,12 +595,12 @@ class LO_2MA(Strategy):
         return final_weights
 
 
-class MachineLearningMethod(Strategy):
+class MLStrt(Strategy):
     def __init__(self, data: list[str] | dict[str, pd.DataFrame]) -> None:
         """
         Initialize MachineLearningMethod class
         Args:
-            list of tickers to be considered in universe OR
+            Data: list of tickers to be considered in universe OR
                   dictionary of DataFrames, each containing dates along rows and tickers along columns,
                   with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
         Return:

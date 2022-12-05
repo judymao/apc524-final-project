@@ -1,31 +1,140 @@
 # type: ignore
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from src.tradestrat.strategies import MachineLearningMethod, Momentum, Value
+from src.tradestrat.strategies import MLStrt, Momentum, Value,TrendFollowing,LO2MA
 
-DATA = pd.read_csv("tradestrat/data/sp500_prices.csv")
+DATA = pd.read_csv("/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/src/tradestrat/data/sp500_prices.csv")
+#DATA = pd.read_csv("tradestrat/data/sp500_prices.csv")
 
-px_last = pd.read_csv(
-    "tradestrat/data/sp500_prices.csv",
-    index_col="Date",
-)
-ret_data = np.log(px_last) - np.log(px_last.shift(1))
-
-mom_data_dict = {"returns": ret_data, "price": DATA}
-
-
-mom_test = Momentum(
-    data=mom_data_dict, lookback_period=6, min_periods=120, skip_period=21, perc=10
-)
-
-ml_test = MachineLearningMethod(data=["AAPL", "IBM", "A", "MSFT", "AMZN"])
-portfolio = ml_test.weights
+pe_data = pd.read_excel("/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/src/tradestrat/data/pe_data.xlsx",index_col=0)
+pe_data.columns = pe_data.columns.str.replace(' UN Equity', '')
+pe_data.columns = pe_data.columns.str.replace(' UW Equity', '')
+pe_data = pe_data.loc[:,DATA.columns.values[1:]]
+pe_data=pe_data.dropna(axis=1,how = "any")
 
 
-@pytest.mark.parametrize("strategy", [mom_test, ml_test])
+value_test_pe = Value({"price":DATA,"P_E":pe_data},signal_name = "P_E",perc = 0.1)
+mom_test = Momentum(["all"], lookback_period=6, min_periods=120, skip_period=21, perc=0.1)
+tf_test = trend_following(["all"])
+ml_test = MLStrt(data=["AAPL", "IBM", "A", "MSFT", "AMZN"])
+LO2MA = LO2MA
+@pytest.mark.parametrize("strategy", [Momentum])
+def mom_init(strategy):
+    with pytest.raises(ValueError):
+        strategy(["A","AAPL","ABC","ABMD","ABT","ABDE","ADI","ADM","ADP","ADSK"],perc = 0.01)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], lookback_period = 10000)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], lookback = -1)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], perc="1")
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], perc = 5)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], perc=-0.5)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], skip_period="1")
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], skip_period=-1)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], skip_period=5000)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], min_periods = -1)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], min_periods=50,lookback = 1)
+
+@pytest.mark.parametrize("strategy", [value_test_pe])
+def Value_init(strategy):
+    with pytest.raises(ValueError):
+        strategy({"price":DATA,"P_E":pe_data}, perc="1")
+
+    with pytest.raises(ValueError):
+        strategy({"price":DATA,"P_E":pe_data}, perc=5)
+
+    with pytest.raises(ValueError):
+        strategy({"price":DATA,"P_E":pe_data}, perc=-0.5)
+
+    with pytest.raises(ValueError):
+        strategy({"price":DATA}, perc=-0.5)
+
+@pytest.mark.parametrize("strategy", [tf_test])
+def TrendFollowing_init(strategy):
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], skip_period="1")
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], min_periods = -1)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], min_periods=50,lookback = 1)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], risk_free = "True")
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], wind=-1)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], wind=5000)
+
+    with pytest.raises(ValueError):
+        strategy(["A", "AAPL", "ABC", "ABMD", "ABT", "ABDE", "ADI", "ADM", "ADP", "ADSK"], wind="1")
+
+@pytest.mark.parametrize("strategy", [LO2MA])
+def LO2MA_init(strategy):
+    with pytest.raises(ValueError):
+        strategy(["all"], MA_long_wind = 20, MA_short_wind = 50)
+
+    with pytest.raises(ValueError):
+        strategy(["all"],  MA_long_wind = 50.5)
+
+    with pytest.raises(ValueError):
+        strategy(["all"],  MA_short_wind = 20.5)
+
+    with pytest.raises(ValueError):
+        strategy(["all"], MA_long_wind = -50)
+
+    with pytest.raises(ValueError):
+        strategy(["all"], MA_short_wind = -10)
+
+    with pytest.raises(ValueError):
+        strategy(["all"], MA_long_wind = 5000)
+
+    with pytest.raises(ValueError):
+        strategy(["all"], skip_period="1")
+
+    with pytest.raises(ValueError):
+        strategy(["all"], skip_period=-1)
+
+    with pytest.raises(ValueError):
+        strategy(["all"], skip_period=5000)
+
+    with pytest.raises(ValueError):
+        strategy(["all"], min_periods=-1)
+
+    with pytest.raises(ValueError):
+        strategy(["all"], min_periods=50, lookback=1)
+
+
+@pytest.mark.parametrize("strategy", [mom_test,value_test_pe,tf_test, ml_test])
 def test_weights(strategy):
     assert strategy.weights.sum(axis=1).values == pytest.approx(0, abs=10e-10)
 
@@ -38,7 +147,7 @@ def test_weights(strategy):
     )
 
 
-@pytest.mark.parametrize("strategy", [mom_test])
+@pytest.mark.parametrize("strategy", [mom_test,tf_test,value_test_pe])
 def test_weights(strategy):
     assert strategy.weights[strategy.weights > 0].apply(
         pd.Series.nunique, axis=1

@@ -111,7 +111,9 @@ class Backtest:
         else:
             return np.array(r)
 
-    def get_annualized_return(self, daily_returns: NDArray | None = None) -> float:
+    def get_annualized_return(
+        self, daily_returns: NDArray[float] | None = None
+    ) -> float:
         """
         Get annualized return
         Args:
@@ -126,7 +128,7 @@ class Backtest:
 
         return annualized_return
 
-    def get_annualized_vol(self, returns: NDArray | None = None) -> float:
+    def get_annualized_vol(self, returns: NDArray[float] | None = None) -> float:
         """
         Get annualized volatility
         Args:
@@ -143,7 +145,7 @@ class Backtest:
         return annualized_vol
 
     def get_annualized_downside_vol(
-        self, rf_rate: float = 0.01, returns: NDArray | None = None
+        self, rf_rate: float = 0.01, returns: NDArray[float] | None = None
     ) -> float:
         """
         Get downside volatility
@@ -178,7 +180,9 @@ class Backtest:
 
         return excess_return / std_return
 
-    def get_rolling_sharpe(self, rf_rate: float = 0.01, lookback: int = 20) -> NDArray:
+    def get_rolling_sharpe(
+        self, rf_rate: float = 0.01, lookback: int = 20
+    ) -> NDArray[float]:
         """
         Get rolling Sharpe ratio
         Args:
@@ -222,7 +226,9 @@ class Backtest:
 
         return excess_return / downside_vol
 
-    def get_rolling_sortino(self, rf_rate: float = 0.01, lookback: int = 20) -> NDArray:
+    def get_rolling_sortino(
+        self, rf_rate: float = 0.01, lookback: int = 20
+    ) -> NDArray[float]:
         """
         Get rolling Sortino ratio
         Args:

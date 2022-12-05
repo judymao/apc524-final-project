@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-
 import abc
+import os
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
-
-DATA_PATH = "tradestrat/data/sp500_prices.csv"
-
-DATA_PATH = "/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/src/tradestrat/data/sp500_prices.csv"
+if os.getcwd()[-20:] == "apc524-final-project":
+    DATA_PATH = os.path.join(os.getcwd(), "src/tradestrat/data/sp500_prices.csv")
+else:
+    DATA_PATH = os.path.join(
+        os.path.relpath(os.path.dirname(__file__)), "data/sp500_prices.csv"
+    )
 DATA = pd.read_csv(DATA_PATH)
 
 
@@ -373,7 +375,7 @@ class TrendFollowing(Strategy):
         self.skip_period = skip_period
         self.wind = wind
         self.risk_free = risk_free
-        #
+
         if self.min_periods == None:
             self.min_periods = self.wind*21 - 20
 
@@ -541,7 +543,6 @@ class LO2MA(Strategy):
 
         self.weights = self.get_weights()
 
-
     def equal_weights_long(self, portfolio: pd.DataFrame) -> pd.DataFrame:
 
         """
@@ -597,16 +598,40 @@ class LO2MA(Strategy):
 
 class MLStrt(Strategy):
     def __init__(self, data: list[str] | dict[str, pd.DataFrame]) -> None:
+class MachineLearningMethod(Strategy):
+    def __init__(
+        self,
+        data: list[str] | dict[str, pd.DataFrame],
+        model: str = "lr",
+        lookahead: int = 1,
+        max_lag: int = 10,
+        n_long: int = 2,
+        n_short: int = 2,
+        rf_rate: float = 0.01,
+    ) -> None:
         """
         Initialize MachineLearningMethod class
         Args:
-            Data: list of tickers to be considered in universe OR
+            data: list of tickers to be considered in universe OR
                   dictionary of DataFrames, each containing dates along rows and tickers along columns,
                   with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+            model: one of 'lr' or 'rf'. If 'lr', then linear regression is used, otherwise random forest regression
+            lookahead: number of days ahead to predict return for [default 1]
+            max_lag: number of lagged returns to use as features for predicting future daily return
+            n_long: number of stocks to long
+            n_short: number of stocks to short
+            rf_rate: risk free rate
         Return:
             None
         """
         super().__init__(data)
+
+        self.model = model
+        self.lookahead = lookahead
+        self.max_lag = max_lag
+        self.n_long = n_long
+        self.n_short = n_short
+        self.rf_rate = rf_rate
 
         self.weights = self.get_weights()
 
@@ -721,25 +746,12 @@ class MLStrt(Strategy):
         final_df = port_long + port_short
         return final_df
 
-    def get_weights(
-        self,
-        model: str = "lr",
-        lookahead: int = 1,
-        max_lag: int = 10,
-        n_long: int = 2,
-        n_short: int = 2,
-        rf_rate: float = 0.01,
-    ) -> pd.DataFrame:
+    def get_weights(self) -> pd.DataFrame:
         """
         Get strategy weights over time
 
         Args:
-            model: one of 'lr' or 'rf'. If 'lr', then linear regression is used, otherwise random forest regression
-            lookahead: number of days ahead to predict return for [default 1]
-            max_lag: number of lagged returns to use as features for predicting future daily return
-            n_long: number of stocks to long
-            n_short: number of stocks to short
-            rf_rate: risk free rate
+            None
 
         Return:
             DataFrame containing dates along rows and tickers along columns, with values being the strategy weights
@@ -750,29 +762,29 @@ class MLStrt(Strategy):
             raise ValueError("Need at least 5 stocks")
 
         # get predicted returns
-        df = self.predict_returns(model, lookahead, max_lag, daily=False)
+        df = self.predict_returns(self.model, self.lookahead, self.max_lag, daily=False)
 
         # sort values based on predicted returns
         df_sorted = df.sort_values(by=["pred_return"])
 
         # subtract risk-free rate
-        df_sorted["pred_return"] -= rf_rate
+        df_sorted["pred_return"] -= self.rf_rate
 
         # get stocks to long and short based on their relative predicted returns
-        short_stocks = df_sorted.iloc[:n_short].copy()
-        long_stocks = df_sorted.iloc[-n_long:].copy()
+        short_stocks = df_sorted.iloc[: self.n_short].copy()
+        long_stocks = df_sorted.iloc[-self.n_long :].copy()
 
         # concatenate stocks of interest and normalize
         df_concat = pd.concat((short_stocks, long_stocks))
         df_concat["weight"] = df_concat["pred_return"] - df_concat["pred_return"].mean()
 
         # incorporate stocks that we do not want to long or short (set weight to 0)
-        n_zeros = len(df) - n_long - n_short
+        n_zeros = len(df) - self.n_long - self.n_short
         weights = np.concatenate(
             (
-                np.array(df_concat["weight"].iloc[:n_short]),
+                np.array(df_concat["weight"].iloc[: self.n_short]),
                 np.array(np.zeros(n_zeros)),
-                np.array(df_concat["weight"].iloc[-n_long:]),
+                np.array(df_concat["weight"].iloc[-self.n_long :]),
             )
         )
 

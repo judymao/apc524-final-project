@@ -20,4 +20,4 @@ Then, create any Python file and import the desired classes from src.tradestrat.
 from src.tradestrat import Momentum, Backtest
 ```
 
-For details on how to use the classes and methods, see ```tutorials.ipynb```.
+For details on how to use the classes and methods, see ```tutorials.ipynb```. For more documentation, see the [ReadTheDocs page](https://apc524-final-project.readthedocs.io/en/latest/).

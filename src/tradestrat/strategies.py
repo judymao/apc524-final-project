@@ -505,7 +505,7 @@ class LO2MA(Strategy):
         self.skip_period = skip_period
 
         if self.min_periods == None:
-            self.min_periods = np.floor(np.min([MA_short_wind, MA_long_wind]) / 2)
+            self.min_periods = int(np.floor(np.min([MA_short_wind, MA_long_wind]) / 2))
 
         if MA_long_wind < MA_short_wind:
             raise ValueError("MA_long_wind must be bigger than MA_short_wind")
@@ -516,10 +516,10 @@ class LO2MA(Strategy):
         if type(MA_short_wind) != int:
             raise ValueError("MA_short_wind must be an integer")
 
-        if MA_long_wind > 0:
+        if MA_long_wind < 0:
             raise ValueError("MA_long_wind must be bigger than zero")
 
-        if MA_short_wind > 0:
+        if MA_short_wind < 0:
             raise ValueError("MA_short_wind must be bigger than zero")
 
         if MA_long_wind > len(self.data):
@@ -534,12 +534,8 @@ class LO2MA(Strategy):
         if skip_period > len(self.data):
             raise ValueError("skip_period period is too large")
 
-        if min_periods < 0:
+        if type(min_periods)==int and  min_periods< 0:
             raise ValueError("min_periods should be bigger than 0")
-
-        if min_periods > lookback_period*21:
-            raise ValueError("your min_periods cannot be bigger than you lookback period")
-
 
         self.weights = self.get_weights()
 
@@ -574,7 +570,7 @@ class LO2MA(Strategy):
             column
         """
 
-        ret_data = self.data["returns"]
+        ret_data = np.log(self.data) - np.log(self.data.shift(1))
         ret_MA_long = ret_data.rolling(
             window=self.MA_long_wind, min_periods=self.min_periods
         ).mean()
@@ -582,7 +578,7 @@ class LO2MA(Strategy):
             window=self.MA_short_wind, min_periods=self.min_periods
         ).mean()
 
-        signal = np.where(ret_MA_short > ret_MA_long, 1.0, 0.0)
+        signal = pd.DataFrame(np.where(ret_MA_short > ret_MA_long, 1.0, 0.0))
         final_weights = self.equal_weights_long(signal)
         n_middle_col = int(np.floor(len(final_weights.columns) / 2))
         middle_col = final_weights.columns[n_middle_col]
@@ -595,10 +591,7 @@ class LO2MA(Strategy):
 
         return final_weights
 
-
 class MLStrt(Strategy):
-    def __init__(self, data: list[str] | dict[str, pd.DataFrame]) -> None:
-class MachineLearningMethod(Strategy):
     def __init__(
         self,
         data: list[str] | dict[str, pd.DataFrame],
@@ -633,6 +626,24 @@ class MachineLearningMethod(Strategy):
         self.n_short = n_short
         self.rf_rate = rf_rate
 
+        if model not in ["lr", "rf"]:
+            raise ValueError("model must be one of: ['lr', 'rf']")
+
+        if lookahead < 1:
+            raise ValueError("lookahead must be at least 1")
+
+        if lookahead > len(self.data):
+            raise ValueError("lookahead is too large")
+
+        if max_lag < 1:
+            raise ValueError("max_lag must be at least 1")
+
+        if max_lag > len(self.data):
+            raise ValueError("max_lag is too large")
+
+        if type(daily) != bool:
+            raise TypeError("daily must be a Boolean")
+
         self.weights = self.get_weights()
 
     def predict_returns(
@@ -652,23 +663,6 @@ class MachineLearningMethod(Strategy):
         Return:
             average predicted daily return over the test period for each stock
         """
-        if model not in ["lr", "rf"]:
-            raise ValueError("model must be one of: ['lr', 'rf']")
-
-        if lookahead < 1:
-            raise ValueError("lookahead must be at least 1")
-
-        if lookahead > len(self.data):
-            raise ValueError("lookahead is too large")
-
-        if max_lag < 1:
-            raise ValueError("max_lag must be at least 1")
-
-        if max_lag > len(self.data):
-            raise ValueError("max_lag is too large")
-
-        if type(daily) != bool:
-            raise TypeError("daily must be a Boolean")
 
         # get daily returns
         returns = self.data.pct_change(1)

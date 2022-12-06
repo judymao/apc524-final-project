@@ -111,7 +111,14 @@ class Momentum(Strategy):
         if self.min_periods == None:
             self.min_periods = (self.lookback_period-1)*21
 
-        self.weights = self.get_weights()
+        if type(perc) != float:
+            raise ValueError("perc needs to be a float")
+
+        if perc <= 0:
+            raise ValueError("perc should be bigger than zero")
+
+        if perc >= 1:
+            raise ValueError("perc should be smaller than 1")
 
         if len(self.data.columns) < 1/perc:
             raise ValueError("Given the percentage that was inputed you must provide a bigger number of stocks to have"
@@ -123,19 +130,10 @@ class Momentum(Strategy):
         if lookback_period > len(self.data):
             raise ValueError("lookback period is too large")
 
-        if type(perc) != float:
-            raise ValueError("perc needs to be a float")
-
-        if perc <= 0:
-            raise ValueError("perc should be bigger than zero")
-
-        if perc >= 1:
-            raise ValueError("perc should be smaller than 1")
-
-        if min_periods < 0:
+        if self.min_periods < 0:
             raise ValueError("min_periods should be bigger than 0")
 
-        if min_periods > lookback_period*21:
+        if self.min_periods > lookback_period*21:
             raise ValueError("your min_periods cannot be bigger than you lookback period")
 
         if type(skip_period) != int:
@@ -146,6 +144,8 @@ class Momentum(Strategy):
 
         if skip_period > len(self.data):
             raise ValueError("skip_period period is too large")
+
+        self.weights = self.get_weights()
 
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
@@ -257,8 +257,6 @@ class Value(Strategy):
         self.perc = perc
         self.signal_name = signal_name
 
-        self.weights = self.get_weights()
-
         if type(perc) != float:
             raise ValueError("perc needs to be a float")
 
@@ -270,6 +268,8 @@ class Value(Strategy):
 
         if type(signal_name) != str:
             raise ValueError("signal_name must be a string")
+
+        self.weights = self.get_weights()
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
 
@@ -283,14 +283,14 @@ class Value(Strategy):
         Return:
             Dataframe of equally weighted long and short portfolios. Long positions sums to 100%, short positions
             sum to -100%
-        """
 
+        """
         port_long = portfolio.where(portfolio > 0, 0)
         port_short = portfolio.where(portfolio < 0, 0)
         n_long = (port_long.fillna(0) != 0).astype(int).sum(axis=1)
-        n_short = (port_long.fillna(0) != 0).astype(int).sum(axis=1)
+        n_short = (port_short.fillna(0) != 0).astype(int).sum(axis=1)
         port_long = port_long.div(n_long, axis=0)
-        port_short = port_short.div(n_long, axis=0)
+        port_short = port_short.div(n_short, axis=0)
         port_long[np.isnan(port_long)] = 0
         port_short[np.isnan(port_short)] = 0
 
@@ -322,7 +322,7 @@ class Value(Strategy):
         rank = final_ret.rank(axis=1, pct=True)
 
         final_ret[:] = np.where(
-            rank > (1 - self.perc / 100), -1, np.where(rank < self.perc / 100, 1, 0)
+            rank > (1 - self.perc), -1, np.where(rank < self.perc, 1, 0)
         )
 
         final_weights = self.equal_weights_ls(final_ret)
@@ -376,11 +376,17 @@ class TrendFollowing(Strategy):
         self.wind = wind
         self.risk_free = risk_free
 
+        if type(wind) != int:
+            raise ValueError("wind should be an integer")
+
         if self.min_periods == None:
             self.min_periods = self.wind*21 - 20
 
-        self.weights = self.get_weights()
+        if wind < 0:
+            raise ValueError("wind should be bigger than 0")
 
+        if wind > len(self.data):
+            raise ValueError("wind is too large")
 
         if self.min_periods < 0:
             raise ValueError("min_periods should be bigger than 0")
@@ -394,15 +400,7 @@ class TrendFollowing(Strategy):
         if type(risk_free) != bool:
             raise ValueError("risk_free should be an boolean")
 
-        if wind < 0:
-            raise ValueError("wind should be bigger than 0")
-
-        if wind > len(self.data):
-            raise ValueError("wind is too large")
-
-        if type(wind) != int:
-            raise ValueError("wind should be an integer")
-
+        self.weights = self.get_weights()
 
 
     def get_weights(self) -> pd.DataFrame:
@@ -580,14 +578,14 @@ class LO2MA(Strategy):
 
         signal = pd.DataFrame(np.where(ret_MA_short > ret_MA_long, 1.0, 0.0))
         final_weights = self.equal_weights_long(signal)
-        n_middle_col = int(np.floor(len(final_weights.columns) / 2))
-        middle_col = final_weights.columns[n_middle_col]
+        # n_middle_col = int(np.floor(len(final_weights.columns) / 2))
+        # middle_col = final_weights.columns[n_middle_col]
         final_weights.loc[
-            final_weights[final_weights > 0].sum(axis=1) == 0, :middle_col
-        ] = (1 / n_middle_col)
-        final_weights.loc[
-            final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
-        ] = -1 / (len(final_weights.columns) - n_middle_col)
+            final_weights.sum(axis=1) == 0
+        ] = (1 / len(final_weights.columns))
+        # final_weights.loc[
+        #     final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
+        # ] = -1 / (len(final_weights.columns) - n_middle_col)
 
         return final_weights
 
@@ -641,8 +639,7 @@ class MLStrt(Strategy):
         if max_lag > len(self.data):
             raise ValueError("max_lag is too large")
 
-        if type(daily) != bool:
-            raise TypeError("daily must be a Boolean")
+        # Tests
 
         self.weights = self.get_weights()
 

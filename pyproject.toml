@@ -14,7 +14,8 @@ test = [
   "numpy",
   "pandas",
   "matplotlib",
-  "scikit-learn"
+  "scikit-learn",
+  "openpyxl"
 ]
 
 [tool.pytest.ini_options]

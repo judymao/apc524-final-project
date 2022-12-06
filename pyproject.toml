@@ -17,6 +17,11 @@ test = [
   "scikit-learn",
   "openpyxl"
 ]
+docs = [
+    "sphinx >=4.0",
+    "sphinx_copybutton",  # Easy code copy button
+]
+
 
 [tool.pytest.ini_options]
 minversion = "6.0"

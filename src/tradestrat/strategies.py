@@ -109,7 +109,7 @@ class Momentum(Strategy):
         self.perc = perc
 
         if self.min_periods == None:
-            self.min_periods = (self.lookback_period-1)*21
+            self.min_periods = (self.lookback_period - 1) * 21
 
         if type(perc) != float:
             raise ValueError("perc needs to be a float")
@@ -120,9 +120,11 @@ class Momentum(Strategy):
         if perc >= 1:
             raise ValueError("perc should be smaller than 1")
 
-        if len(self.data.columns) < 1/perc:
-            raise ValueError("Given the percentage that was inputed you must provide a bigger number of stocks to have"
-                             " at least one stock in each leg")
+        if len(self.data.columns) < 1 / perc:
+            raise ValueError(
+                "Given the percentage that was inputed you must provide a bigger number of stocks to have"
+                " at least one stock in each leg"
+            )
 
         if lookback_period < 1:
             raise ValueError("lookback period must be at least 1")
@@ -130,11 +132,13 @@ class Momentum(Strategy):
         if lookback_period > len(self.data):
             raise ValueError("lookback period is too large")
 
-        if self.min_periods < 0:
+        if self.min_periods < 0:  # type: ignore[operator]
             raise ValueError("min_periods should be bigger than 0")
 
-        if self.min_periods > lookback_period*21:
-            raise ValueError("your min_periods cannot be bigger than you lookback period")
+        if self.min_periods > lookback_period * 21:  # type: ignore[operator]
+            raise ValueError(
+                "your min_periods cannot be bigger than you lookback period"
+            )
 
         if type(skip_period) != int:
             raise ValueError("skip_period should be an integer")
@@ -146,7 +150,6 @@ class Momentum(Strategy):
             raise ValueError("skip_period period is too large")
 
         self.weights = self.get_weights()
-
 
     def equal_weights_ls(self, portfolio: pd.DataFrame) -> pd.DataFrame:
 
@@ -207,7 +210,7 @@ class Momentum(Strategy):
         final_ret = _signal.copy()
         rank = final_ret.rank(axis=1, pct=True)
         final_ret[:] = np.where(
-            rank > (1 - self.perc ), 1, np.where(rank <= self.perc, -1, 0)
+            rank > (1 - self.perc), 1, np.where(rank <= self.perc, -1, 0)
         )
 
         final_weights = self.equal_weights_ls(final_ret)
@@ -233,7 +236,7 @@ class Value(Strategy):
     def __init__(
         self,
         data: dict[str, pd.DataFrame],
-        signal_name: str ='P_E',
+        signal_name: str = "P_E",
         perc: float = 0.1,
     ) -> None:
 
@@ -315,7 +318,7 @@ class Value(Strategy):
         try:
             _signal = self.strategy_data[self.signal_name]
         except:
-            raise ValueError('Could not find signal_name in the dictonary provided' )
+            raise ValueError("Could not find signal_name in the dictonary provided")
 
         # Weights
         final_ret = _signal.copy()
@@ -380,7 +383,7 @@ class TrendFollowing(Strategy):
             raise ValueError("wind should be an integer")
 
         if self.min_periods == None:
-            self.min_periods = self.wind*21 - 20
+            self.min_periods = self.wind * 21 - 20
 
         if wind < 0:
             raise ValueError("wind should be bigger than 0")
@@ -388,11 +391,13 @@ class TrendFollowing(Strategy):
         if wind > len(self.data):
             raise ValueError("wind is too large")
 
-        if self.min_periods < 0:
+        if self.min_periods < 0:  # type: ignore[operator]
             raise ValueError("min_periods should be bigger than 0")
 
-        if self.min_periods > wind*21:
-            raise ValueError("your min_periods cannot be bigger than you lookback period")
+        if self.min_periods > wind * 21:  # type: ignore[operator]
+            raise ValueError(
+                "your min_periods cannot be bigger than you lookback period"
+            )
 
         if type(skip_period) != int:
             raise ValueError("skip_period should be an integer")
@@ -401,7 +406,6 @@ class TrendFollowing(Strategy):
             raise ValueError("risk_free should be an boolean")
 
         self.weights = self.get_weights()
-
 
     def get_weights(self) -> pd.DataFrame:
         """
@@ -421,11 +425,11 @@ class TrendFollowing(Strategy):
         lookback = (
             (ret_data + 1)
             .shift(aux)
-            .rolling(self.wind*21, min_periods=self.min_periods)
+            .rolling(self.wind * 21, min_periods=self.min_periods)
             .apply(np.prod, raw=True)
         ) - 1
 
-        vol = ret_data.rolling(self.wind*21, min_periods=self.min_periods).std()
+        vol = ret_data.rolling(self.wind * 21, min_periods=self.min_periods).std()
 
         if self.risk_free == False:
 
@@ -436,7 +440,7 @@ class TrendFollowing(Strategy):
             rf_lookback = (
                 (rf + 1)
                 .shift(aux)
-                .rolling(self.wind*21, min_periods=self.min_periods)
+                .rolling(self.wind * 21, min_periods=self.min_periods)
                 .prod()
             ) - 1
             lookback_adj = lookback.sub(rf_lookback, axis=0)
@@ -532,7 +536,7 @@ class LO2MA(Strategy):
         if skip_period > len(self.data):
             raise ValueError("skip_period period is too large")
 
-        if type(min_periods)==int and  min_periods< 0:
+        if type(min_periods) == int and min_periods < 0:
             raise ValueError("min_periods should be bigger than 0")
 
         self.weights = self.get_weights()
@@ -580,14 +584,15 @@ class LO2MA(Strategy):
         final_weights = self.equal_weights_long(signal)
         # n_middle_col = int(np.floor(len(final_weights.columns) / 2))
         # middle_col = final_weights.columns[n_middle_col]
-        final_weights.loc[
-            final_weights.sum(axis=1) == 0
-        ] = (1 / len(final_weights.columns))
+        final_weights.loc[final_weights.sum(axis=1) == 0] = 1 / len(
+            final_weights.columns
+        )
         # final_weights.loc[
         #     final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
         # ] = -1 / (len(final_weights.columns) - n_middle_col)
 
         return final_weights
+
 
 class MLStrt(Strategy):
     def __init__(

@@ -16,7 +16,7 @@ git clone git@github.com:judymao/apc524-final-project.git
 ```
 
 Then, create any Python file and import the desired classes from src.tradestrat. For example, if a momentum-based strategy is desired, the following can be written in the Python file:
-```{python}
+```
 from src.tradestrat import Momentum, Backtest
 ```
 

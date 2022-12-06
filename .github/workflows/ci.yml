@@ -44,7 +44,7 @@ jobs:
         uses: actions/configure-pages@v2
 
       - name: build output
-        run: pipx run nox -s docs
+        run: pipx run nox -s tests
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1

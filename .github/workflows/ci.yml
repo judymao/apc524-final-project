@@ -39,14 +39,12 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v2
+      - uses: actions/configure-pages@v2
 
       - name: build output
-        run: pipx run nox -s tests
+        run: pipx run nox -s docs
 
-      - name: Upload artifact
+      - name: upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           path: docs/build

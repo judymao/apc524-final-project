@@ -4,7 +4,12 @@ Princeton University APC524 Final Project
 
 ## Install and Run the Project
 
-To make use of our strategies and backtests, start by cloning the repository. Then, create any Python file and import the desired classes from src.tradestrat. For example, if a momentum-based strategy is desired, the following can be written in the Python file:
+To make use of our strategies and backtests, start by cloning the repository, by running the following:
+```
+git@github.com:judymao/apc524-final-project.git
+```
+
+Then, create any Python file and import the desired classes from src.tradestrat. For example, if a momentum-based strategy is desired, the following can be written in the Python file:
 ```
 from src.tradestrat import Momentum, Backtest
 ```

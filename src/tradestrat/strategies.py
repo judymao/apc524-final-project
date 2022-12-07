@@ -594,7 +594,7 @@ class LO2MA(Strategy):
         return final_weights
 
 
-class MLStrt(Strategy):
+class MLStrat(Strategy):
     def __init__(
         self,
         data: list[str] | dict[str, pd.DataFrame],

@@ -230,7 +230,7 @@ class Value(Strategy):
 
     """Stocks with cheap fundamentals tend to outperform stocks with expensive fundamentals
 
-    See Fama,French (1992,2012) and Asness,Moskowitz,Pedersen(2013) for academic references.
+    See Fama,French (1992,2015) and Asness,Moskowitz,Pedersen(2013) for academic references.
     """
 
     def __init__(

@@ -137,7 +137,7 @@ class Momentum(Strategy):
 
         if self.min_periods > lookback_period * 21:  # type: ignore[operator]
             raise ValueError(
-                "your min_periods cannot be bigger than you lookback period"
+                "your min_periods cannot be bigger than your lookback period"
             )
 
         if type(skip_period) != int:
@@ -355,7 +355,7 @@ class TrendFollowing(Strategy):
         min_periods: int | None = None,
         skip_period: int = 0,
         wind: int = 6,
-        risk_free: bool = False,
+        rf_ind: bool = False,
     ) -> None:
 
         """
@@ -377,7 +377,7 @@ class TrendFollowing(Strategy):
         self.min_periods = min_periods
         self.skip_period = skip_period
         self.wind = wind
-        self.risk_free = risk_free
+        self.rf_ind = rf_ind
 
         if type(wind) != int:
             raise TypeError("wind should be an integer")
@@ -402,8 +402,8 @@ class TrendFollowing(Strategy):
         if type(skip_period) != int:
             raise TypeError("skip_period should be an integer")
 
-        if type(risk_free) != bool:
-            raise TypeError("risk_free should be an boolean")
+        if type(rf_ind) != bool:
+            raise TypeError("rf_ind should be an boolean")
 
         self.weights = self.get_weights()
 
@@ -431,7 +431,7 @@ class TrendFollowing(Strategy):
 
         vol = ret_data.rolling(self.wind * 21, min_periods=self.min_periods).std()
 
-        if self.risk_free == False:
+        if not self.rf_ind:
 
             signal = lookback / vol
 

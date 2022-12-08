@@ -1,10 +1,3 @@
 # __init__.py
 from .backtest import Backtest
-from .strategies import (
-    LO_2MA,
-    MachineLearningMethod,
-    Momentum,
-    Strategy,
-    Value,
-    trend_following,
-)
+from .strategies import LO2MA, MLStrat, Momentum, Strategy, TrendFollowing, Value

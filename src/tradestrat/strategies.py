@@ -364,12 +364,13 @@ class TrendFollowing(Strategy):
         Args:
             data: list of tickers to be considered in universe OR
                   dictionary of DataFrames, each containing dates along rows and tickers along columns,
-                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...})
+                  with one DataFrame per value (e.g. data = {'price': ..., 'PE': ...}).If rf_ind = True, user must provide
+            a dataframe called risk_free in this argument.
             min_periods: Minimal periods of data necessary for weights to be non-empty while calculating rolling
                          returns
             skip_period: Number of days that should be skipped for returns to start being calculated.
             wind: Size of window (in months) used to determine an asset's performance
-
+            rf_ind: Indication whether to discount the risk_free rate from the stocks return.
         Return:
             None
         """

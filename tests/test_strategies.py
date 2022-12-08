@@ -6,15 +6,12 @@ import openpyxl
 import pandas as pd
 import pytest
 
-from src.tradestrat.strategies import LO2MA, MLStrt, Momentum, TrendFollowing, Value
+from src.tradestrat.strategies import LO2MA, MLStrat, Momentum, TrendFollowing, Value
 
-DATA = pd.read_csv(
-    "/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/src/tradestrat/data/sp500_prices.csv"
-)
-# DATA = pd.read_csv("src/tradestrat/data/sp500_prices.csv")
+DATA = pd.read_csv("src/tradestrat/data/sp500_prices.csv")
 
 pe_data = pd.read_excel(
-    "/Users/lipe/Documents/Mestrado/3 Semester/Software Engineering/PROJECT/apc524-final-project/src/tradestrat/data/pe_data.xlsx",
+    "src/tradestrat/data/pe_data.xlsx",
     index_col=0,
 )
 pe_data.columns = pe_data.columns.str.replace(" UN Equity", "")
@@ -27,7 +24,7 @@ MOM_TEST = Momentum(
     ["all"], lookback_period=6, min_periods=120, skip_period=21, perc=0.1
 )
 TF_TEST = TrendFollowing(["all"])
-ML_TEST = MLStrt(data=["AAPL", "IBM", "A", "MSFT", "AMZN"])
+ML_TEST = MLStrat(data=["AAPL", "IBM", "A", "MSFT", "AMZN"])
 LO2MA_TEST = LO2MA(data=["all"])
 
 A = TF_TEST.weights
@@ -198,8 +195,8 @@ def test_LO2MA_init(strategy):
         strategy(["all"], min_periods=-1)
 
 
-@pytest.mark.parametrize("strategy", [MLStrt])
-def test_MLStrt_init(strategy):
+@pytest.mark.parametrize("strategy", [MLStrat])
+def test_MLStrat_init(strategy):
     with pytest.raises(ValueError):
         strategy(["all"], model="")
 

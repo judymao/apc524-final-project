@@ -638,8 +638,6 @@ class MLStrat(Strategy):
         if max_lag > len(self.data):
             raise ValueError("max_lag is too large")
 
-        # Tests
-
         self.weights = self.get_weights()
 
     def predict_returns(

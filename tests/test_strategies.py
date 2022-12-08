@@ -16,14 +16,14 @@ else:
 DATA = pd.read_csv(DATA_PATH)
 
 if os.getcwd()[-20:] == "apc524-final-project":
-    DATA_PATH2 = os.path.join(os.getcwd(), "src/tradestrat/data/pe_data.xlsx")
+    PE_PATH = os.path.join(os.getcwd(), "src/tradestrat/data/pe_data.xlsx")
 else:
-    DATA_PATH2 = os.path.join(
+    PE_PATH = os.path.join(
         os.path.relpath(os.path.dirname(__file__)), "data/pe_data.xlsx"
     )
 
 PE_DATA = pd.read_excel(
-    DATA_PATH2,
+    PE_PATH,
     index_col=0,
 )
 

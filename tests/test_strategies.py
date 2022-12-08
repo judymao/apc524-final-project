@@ -8,10 +8,25 @@ import pytest
 
 from src.tradestrat.strategies import LO2MA, MLStrat, Momentum, TrendFollowing, Value
 
-DATA = pd.read_csv("src/tradestrat/data/sp500_prices.csv")
+if os.getcwd()[-20:] == "apc524-final-project":
+    DATA_PATH = os.path.join(os.getcwd(), "src/tradestrat/data/sp500_prices.csv")
+else:
+    DATA_PATH = os.path.join(
+        os.path.relpath(os.path.dirname(__file__)), "data/sp500_prices.csv"
+    )
 
-pe_data = pd.read_excel(
-    "src/tradestrat/data/pe_data.xlsx",
+DATA = pd.read_csv(DATA_PATH)
+
+if os.getcwd()[-20:] == "apc524-final-project":
+    DATA_PATH2 = os.path.join(os.getcwd(), "src/tradestrat/data/pe_data.xlsx")
+else:
+    DATA_PATH2 = os.path.join(
+        os.path.relpath(os.path.dirname(__file__)), "data/pe_data.xlsx"
+    )
+
+DATA = pd.read_csv(DATA_PATH)
+
+pe_data = pd.read_excel(DATA_PATH2,
     index_col=0,
 )
 pe_data.columns = pe_data.columns.str.replace(" UN Equity", "")

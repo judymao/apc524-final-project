@@ -112,7 +112,7 @@ class Momentum(Strategy):
             self.min_periods = (self.lookback_period - 1) * 21
 
         if type(perc) != float:
-            raise ValueError("perc needs to be a float")
+            raise TypeError("perc needs to be a float")
 
         if perc <= 0:
             raise ValueError("perc should be bigger than zero")
@@ -261,7 +261,7 @@ class Value(Strategy):
         self.signal_name = signal_name
 
         if type(perc) != float:
-            raise ValueError("perc needs to be a float")
+            raise TypeError("perc needs to be a float")
 
         if perc <= 0:
             raise ValueError("perc should be bigger than zero")
@@ -270,7 +270,7 @@ class Value(Strategy):
             raise ValueError("perc should be smaller than 1")
 
         if type(signal_name) != str:
-            raise ValueError("signal_name must be a string")
+            raise type("signal_name must be a string")
 
         self.weights = self.get_weights()
 
@@ -380,7 +380,7 @@ class TrendFollowing(Strategy):
         self.risk_free = risk_free
 
         if type(wind) != int:
-            raise ValueError("wind should be an integer")
+            raise TypeError("wind should be an integer")
 
         if self.min_periods == None:
             self.min_periods = self.wind * 21 - 20
@@ -400,10 +400,10 @@ class TrendFollowing(Strategy):
             )
 
         if type(skip_period) != int:
-            raise ValueError("skip_period should be an integer")
+            raise TypeError("skip_period should be an integer")
 
         if type(risk_free) != bool:
-            raise ValueError("risk_free should be an boolean")
+            raise TypeError("risk_free should be an boolean")
 
         self.weights = self.get_weights()
 
@@ -513,10 +513,10 @@ class LO2MA(Strategy):
             raise ValueError("MA_long_wind must be bigger than MA_short_wind")
 
         if type(MA_long_wind) != int:
-            raise ValueError("MA_long_wind must be an integer")
+            raise TypeError("MA_long_wind must be an integer")
 
         if type(MA_short_wind) != int:
-            raise ValueError("MA_short_wind must be an integer")
+            raise TypeError("MA_short_wind must be an integer")
 
         if MA_long_wind < 0:
             raise ValueError("MA_long_wind must be bigger than zero")
@@ -528,7 +528,7 @@ class LO2MA(Strategy):
             raise ValueError("MA_long_wind is too large")
 
         if type(skip_period) != int:
-            raise ValueError("skip_period should be an integer")
+            raise TypeError("skip_period should be an integer")
 
         if skip_period < 0:
             raise ValueError("skip_period should be higher than zero")

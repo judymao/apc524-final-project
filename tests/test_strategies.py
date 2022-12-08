@@ -1,8 +1,6 @@
 # type: ignore
 import os
 
-import numpy as np
-import openpyxl
 import pandas as pd
 import pytest
 
@@ -24,26 +22,18 @@ else:
         os.path.relpath(os.path.dirname(__file__)), "data/pe_data.xlsx"
     )
 
-DATA = pd.read_csv(DATA_PATH)
-
-pe_data = pd.read_excel(
+PE_DATA = pd.read_excel(
     DATA_PATH2,
     index_col=0,
 )
-pe_data.columns = pe_data.columns.str.replace(" UN Equity", "")
-pe_data.columns = pe_data.columns.str.replace(" UW Equity", "")
-pe_data = pe_data.loc[:, DATA.columns.values[1:]]
-pe_data = pe_data.dropna(axis=1, how="any")
 
-VALUE_TEST_PE = Value({"price": DATA, "P_E": pe_data}, signal_name="P_E", perc=0.1)
+VALUE_TEST_PE = Value({"price": DATA, "P_E": PE_DATA}, signal_name="P_E", perc=0.1)
 MOM_TEST = Momentum(
     ["all"], lookback_period=6, min_periods=120, skip_period=21, perc=0.1
 )
 TF_TEST = TrendFollowing(["all"])
 ML_TEST = MLStrat(data=["AAPL", "IBM", "A", "MSFT", "AMZN"])
 LO2MA_TEST = LO2MA(data=["all"])
-
-A = TF_TEST.weights
 
 
 @pytest.mark.parametrize("strategy", [Momentum])
@@ -119,13 +109,13 @@ def test_mom_init(strategy):
 @pytest.mark.parametrize("strategy", [Value])
 def test_Value_init(strategy):
     with pytest.raises(TypeError):
-        strategy({"price": DATA, "P_E": pe_data}, perc="1")
+        strategy({"price": DATA, "P_E": PE_DATA}, perc="1")
 
     with pytest.raises(ValueError):
-        strategy({"price": DATA, "P_E": pe_data}, perc=5.1)
+        strategy({"price": DATA, "P_E": PE_DATA}, perc=5.1)
 
     with pytest.raises(ValueError):
-        strategy({"price": DATA, "P_E": pe_data}, perc=-0.5)
+        strategy({"price": DATA, "P_E": PE_DATA}, perc=-0.5)
 
     with pytest.raises(ValueError):
         strategy({"price": DATA}, perc=-0.5)
@@ -258,31 +248,32 @@ def test_weights_lo(strategy):
     assert strategy.weights.sum(axis=1).values == pytest.approx(1, abs=10e-10)
 
 
-def test_ML_predict_returns():
+@pytest.mark.parametrize("strategy", [ML_TEST])
+def test_ML_predict_returns(strategy):
     with pytest.raises(ValueError):
-        ML_TEST.predict_returns(model="")
+        strategy.predict_returns(model="")
 
     with pytest.raises(ValueError):
-        ML_TEST.predict_returns(lookahead=0)
+        strategy.predict_returns(lookahead=0)
 
     with pytest.raises(ValueError):
-        ML_TEST.predict_returns(lookahead=1e5)
+        strategy.predict_returns(lookahead=1e5)
 
     with pytest.raises(ValueError):
-        ML_TEST.predict_returns(max_lag=0)
+        strategy.predict_returns(max_lag=0)
 
     with pytest.raises(ValueError):
-        ML_TEST.predict_returns(max_lag=1e5)
+        strategy.predict_returns(max_lag=1e5)
 
     with pytest.raises(TypeError):
-        ML_TEST.predict_returns(daily=0)
+        strategy.predict_returns(daily=0)
 
     # Test ML for default parameters for first two stocks
-    prediction = ML_TEST.predict_returns()["pred_return"].values
+    prediction = strategy.predict_returns()["pred_return"].values
     assert prediction[0] == pytest.approx(0.00122, 0.1)
     assert prediction[1] == pytest.approx(0.00022, 0.1)
 
     # Test ML for annual return for first two stocks
-    prediction = ML_TEST.predict_returns(daily=False)["pred_return"].values
+    prediction = strategy.predict_returns(daily=False)["pred_return"].values
     assert prediction[0] == pytest.approx(0.479, 0.1)
     assert prediction[1] == pytest.approx(0.116, 0.1)

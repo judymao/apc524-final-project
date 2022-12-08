@@ -26,7 +26,8 @@ else:
 
 DATA = pd.read_csv(DATA_PATH)
 
-pe_data = pd.read_excel(DATA_PATH2,
+pe_data = pd.read_excel(
+    DATA_PATH2,
     index_col=0,
 )
 pe_data.columns = pe_data.columns.str.replace(" UN Equity", "")
@@ -74,7 +75,7 @@ def test_mom_init(strategy):
     with pytest.raises(ValueError):
         strategy(
             ["A", "AAPL", "ABC", "ABMD", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"],
-            perc=5,
+            perc=5.1,
         )
 
     with pytest.raises(ValueError):
@@ -121,7 +122,7 @@ def test_Value_init(strategy):
         strategy({"price": DATA, "P_E": pe_data}, perc="1")
 
     with pytest.raises(ValueError):
-        strategy({"price": DATA, "P_E": pe_data}, perc=5)
+        strategy({"price": DATA, "P_E": pe_data}, perc=5.1)
 
     with pytest.raises(ValueError):
         strategy({"price": DATA, "P_E": pe_data}, perc=-0.5)
@@ -182,10 +183,10 @@ def test_LO2MA_init(strategy):
     with pytest.raises(ValueError):
         strategy(["all"], MA_long_wind=20, MA_short_wind=50)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(["all"], MA_long_wind=50.5)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(["all"], MA_short_wind=20.5)
 
     with pytest.raises(ValueError):

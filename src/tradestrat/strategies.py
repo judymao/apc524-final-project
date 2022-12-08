@@ -141,7 +141,7 @@ class Momentum(Strategy):
             )
 
         if type(skip_period) != int:
-            raise ValueError("skip_period should be an integer")
+            raise TypeError("skip_period should be an integer")
 
         if skip_period < 0:
             raise ValueError("skip_period should be higher than zero")
@@ -270,7 +270,7 @@ class Value(Strategy):
             raise ValueError("perc should be smaller than 1")
 
         if type(signal_name) != str:
-            raise type("signal_name must be a string")
+            raise TypeError("signal name must be a string")
 
         self.weights = self.get_weights()
 

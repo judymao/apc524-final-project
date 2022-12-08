@@ -53,7 +53,7 @@ def test_mom_init(strategy):
             lookback_period=-1,
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(
             ["A", "AAPL", "ABC", "ABMD", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"],
             perc="1",
@@ -71,7 +71,7 @@ def test_mom_init(strategy):
             perc=-0.5,
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(
             ["A", "AAPL", "ABC", "ABMD", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"],
             skip_period="1",
@@ -105,7 +105,7 @@ def test_mom_init(strategy):
 
 @pytest.mark.parametrize("strategy", [Value])
 def test_Value_init(strategy):
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy({"price": DATA, "P_E": pe_data}, perc="1")
 
     with pytest.raises(ValueError):
@@ -121,7 +121,7 @@ def test_Value_init(strategy):
 @pytest.mark.parametrize("strategy", [TrendFollowing])
 def test_TrendFollowing_init(strategy):
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(
             ["A", "AAPL", "ABC", "ABMD", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"],
             skip_period="1",
@@ -140,7 +140,7 @@ def test_TrendFollowing_init(strategy):
             wind=1,
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(
             ["A", "AAPL", "ABC", "ABMD", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"],
             risk_free="True",
@@ -158,7 +158,7 @@ def test_TrendFollowing_init(strategy):
             wind=50000,
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(
             ["A", "AAPL", "ABC", "ABMD", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"],
             wind="1",
@@ -185,7 +185,7 @@ def test_LO2MA_init(strategy):
     with pytest.raises(ValueError):
         strategy(["all"], MA_long_wind=50000)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         strategy(["all"], skip_period="1")
 
     with pytest.raises(ValueError):
@@ -246,6 +246,23 @@ def test_weights_lo(strategy):
 
 
 def test_ML_predict_returns():
+    with pytest.raises(ValueError):
+        ML_TEST.predict_returns(model="")
+
+    with pytest.raises(ValueError):
+        ML_TEST.predict_returns(lookahead=0)
+
+    with pytest.raises(ValueError):
+        ML_TEST.predict_returns(lookahead=1e5)
+
+    with pytest.raises(ValueError):
+        ML_TEST.predict_returns(max_lag=0)
+
+    with pytest.raises(ValueError):
+        ML_TEST.predict_returns(max_lag=1e5)
+
+    with pytest.raises(TypeError):
+        ML_TEST.predict_returns(daily=0)
 
     # Test ML for default parameters for first two stocks
     prediction = ML_TEST.predict_returns()["pred_return"].values

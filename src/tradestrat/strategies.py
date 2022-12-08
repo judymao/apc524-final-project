@@ -582,15 +582,9 @@ class LO2MA(Strategy):
 
         signal = pd.DataFrame(np.where(ret_MA_short > ret_MA_long, 1.0, 0.0))
         final_weights = self.equal_weights_long(signal)
-        # n_middle_col = int(np.floor(len(final_weights.columns) / 2))
-        # middle_col = final_weights.columns[n_middle_col]
         final_weights.loc[final_weights.sum(axis=1) == 0] = 1 / len(
             final_weights.columns
         )
-        # final_weights.loc[
-        #     final_weights[final_weights < 0].sum(axis=1) == 0, middle_col:
-        # ] = -1 / (len(final_weights.columns) - n_middle_col)
-
         return final_weights
 
 
@@ -665,6 +659,24 @@ class MLStrt(Strategy):
         Return:
             average predicted daily return over the test period for each stock
         """
+
+        if model not in ["lr", "rf"]:
+            raise ValueError("model must be one of: ['lr', 'rf']")
+
+        if lookahead < 1:
+            raise ValueError("lookahead must be at least 1")
+
+        if lookahead > len(self.data):
+            raise ValueError("lookahead is too large")
+
+        if max_lag < 1:
+            raise ValueError("max_lag must be at least 1")
+
+        if max_lag > len(self.data):
+            raise ValueError("max_lag is too large")
+
+        if type(daily) != bool:
+            raise TypeError("daily must be a Boolean")
 
         # get daily returns
         returns = self.data.pct_change(1)
